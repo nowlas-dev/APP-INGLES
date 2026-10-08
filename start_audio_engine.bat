@@ -9,6 +9,12 @@ echo   LingoBeats / LingoVibe - Motor de Audio e IA (FastAPI)
 echo   Puerto: 8000
 echo ============================================================
 
+REM Verificar y liberar puerto 8000 si ya esta ocupado
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr /r /c:":8000 .*LISTENING"') do (
+    echo [INFO] Liberando puerto 8000 ocupado por PID %%a
+    taskkill /F /PID %%a >nul 2>&1
+)
+
 REM Verificar dependencias criticas
 python -c "import fastapi, uvicorn, faster_whisper, aiosqlite, multipart" >nul 2>&1
 if %ERRORLEVEL% neq 0 (
