@@ -10,7 +10,8 @@ const express = require("express");
 const axios   = require("axios");
 const router  = express.Router();
 
-const AUDIO_ENGINE_URL = process.env.AUDIO_ENGINE_URL || "http://localhost:8000";
+const rawAudioUrl      = process.env.AUDIO_ENGINE_URL || "http://127.0.0.1:8000";
+const AUDIO_ENGINE_URL = rawAudioUrl.replace("localhost", "127.0.0.1");
 
 /**
  * POST /api/session/start
@@ -80,12 +81,14 @@ router.get("/welcome", async (req, res) => {
       timeout: 12000,
     });
 
+    const greetingText = upstreamResponse.headers["x-greeting-text"]
+      ? decodeURIComponent(upstreamResponse.headers["x-greeting-text"])
+      : "";
+
     res.set({
       "Content-Type": "audio/mpeg",
       "Transfer-Encoding": "chunked",
-      ...(upstreamResponse.headers["x-greeting-text"]
-        ? { "X-Greeting-Text": upstreamResponse.headers["x-greeting-text"] }
-        : {}),
+      ...(greetingText ? { "X-Greeting-Text": greetingText } : {}),
       ...(upstreamResponse.headers["x-tutor-attitude"]
         ? { "X-Tutor-Attitude": upstreamResponse.headers["x-tutor-attitude"] }
         : {}),

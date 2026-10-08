@@ -13,6 +13,7 @@ import time
 import base64
 import logging
 import traceback
+from urllib.parse import quote
 from contextlib import asynccontextmanager
 from typing import Optional, Dict, Any
 
@@ -500,7 +501,12 @@ async def session_welcome(
             status_code=500,
             detail="No se recibieron bytes de audio para el saludo de bienvenida.",
         )
-    return Response(content=audio_bytes, media_type="audio/mpeg")
+    headers = {
+        "X-Greeting-Text": quote(greeting_text),
+        "X-Tutor-Attitude": attitude,
+        "X-Tutor-Voice": voice,
+    }
+    return Response(content=audio_bytes, media_type="audio/mpeg", headers=headers)
 
 
 @app.post("/ingest")

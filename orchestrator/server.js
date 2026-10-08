@@ -157,7 +157,13 @@ app.get("/api/ai/session/welcome", async (req, res) => {
     });
     res.set("Content-Type", "audio/mpeg");
     if (r.headers["x-greeting-text"]) {
-      res.set("X-Greeting-Text", r.headers["x-greeting-text"]);
+      res.set("X-Greeting-Text", decodeURIComponent(r.headers["x-greeting-text"]));
+    }
+    if (r.headers["x-tutor-attitude"]) {
+      res.set("X-Tutor-Attitude", r.headers["x-tutor-attitude"]);
+    }
+    if (r.headers["x-tutor-voice"]) {
+      res.set("X-Tutor-Voice", r.headers["x-tutor-voice"]);
     }
     res.send(r.data);
   } catch (err) {
