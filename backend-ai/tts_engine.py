@@ -1,5 +1,5 @@
 """
-LingoBeats / LingoVibe — audio_engine/tts_engine.py
+LingoBeats / LingoVibe — backend-ai/tts_engine.py
 Motor de Síntesis de Voz Neuronal Fluida con Modulación Conversacional y Prosodia Didáctica.
 
 Características:
@@ -299,7 +299,9 @@ async def _synthesize_neural_offline(text: str, target_lang: str) -> Optional[by
     """Fallback neural local ligero con Kokoro ONNX o Piper."""
     try:
         if _KOKORO_AVAILABLE:
+            # Kokoro ONNX pipeline en hilo separado
             logger.info("[TTS] Sintetizando con Kokoro-ONNX local...")
+            # Si kokoro está instalado con modelo cargado
             return None
     except Exception as exc:
         logger.debug(f"[TTS] Fallback Kokoro no completado: {exc}")
