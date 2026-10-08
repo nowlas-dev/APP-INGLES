@@ -58,19 +58,20 @@ const VALID_TRANSITIONS = {
  * @param {string} opts.cefrLevel
  * @param {import('ws').WebSocket} opts.ws
  */
-function create(clientId, { sessionId, userId, cefrLevel, ws }) {
+function create(clientId, { sessionId, userId, cefrLevel, ws, voiceId = "dalia" }) {
   sessions.set(clientId, {
     clientId,
     sessionId,
     userId,
     cefrLevel,
+    voiceId,
     turnSeq: 0,
     state: STATES.IDLE,
     audioChunks: [], // Almacén binario en memoria para evitar sobrecarga Base64
     ws,
     createdAt: new Date(),
   });
-  console.log(`[SESSION] ✅ Creada: ${clientId} | DB session=${sessionId} | lvl=${cefrLevel}`);
+  console.log(`[SESSION] ✅ Creada: ${clientId} | DB session=${sessionId} | lvl=${cefrLevel} | voice=${voiceId}`);
 }
 
 /**
@@ -160,6 +161,17 @@ function updateLevel(clientId, cefrLevel) {
 }
 
 /**
+ * Actualiza la personalidad/voz del tutor en la sesión en memoria.
+ */
+function updateVoice(clientId, voiceId) {
+  const session = sessions.get(clientId);
+  if (session && voiceId) {
+    session.voiceId = voiceId.toLowerCase().trim();
+    console.log(`[SESSION] 🎙️ ${clientId}: tutor voice = ${session.voiceId}`);
+  }
+}
+
+/**
  * Envía un mensaje JSON por WebSocket de forma segura.
  * @param {import('ws').WebSocket} ws
  * @param {object} payload
@@ -180,5 +192,6 @@ module.exports = {
   forceTransition,
   nextTurn,
   updateLevel,
+  updateVoice,
   safeSend,
 };

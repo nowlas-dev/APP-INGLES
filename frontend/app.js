@@ -15,6 +15,11 @@ const AppModule = (() => {
   let isConnected  = false;
   let reconnecting = false;
 
+  // Estado de la voz del tutor
+  const STORAGE_KEY_VOICE = "lingobeats_tutor_voice";
+  let currentVoiceId      = localStorage.getItem(STORAGE_KEY_VOICE) || "dalia";
+  let previewAudioObj     = null;
+
   // Estado de la canción y karaoke sincronizado
   let currentTrackName  = "Yesterday";
   let currentArtistName = "The Beatles";
@@ -26,6 +31,8 @@ const AppModule = (() => {
   // ── Bootstrap ────────────────────────────────────────────
   async function init() {
     UIModule.init();
+    currentVoiceId = localStorage.getItem(STORAGE_KEY_VOICE) || "dalia";
+    UIModule.setSelectedVoice(currentVoiceId);
     _setupEventListeners();
     _connect();
     // Cargar automáticamente canción inicial (Yesterday)
@@ -44,6 +51,7 @@ const AppModule = (() => {
       isConnected  = true;
       reconnecting = false;
       console.log("[APP] 🔌 WebSocket conectado con soporte ArrayBuffer.");
+      _sendMessage("set_voice", { voice_id: currentVoiceId });
     };
 
     ws.onmessage = async (event) => {
@@ -266,7 +274,7 @@ const AppModule = (() => {
       UIModule.showToast("Sin conexión al servidor", "error");
       return;
     }
-    ws.send(JSON.stringify({ type, ...payload }));
+    ws.send(JSON.stringify({ type, voice_id: currentVoiceId, ...payload }));
   }
 
   function _sendBinary(arrayBuffer) {
@@ -328,6 +336,49 @@ const AppModule = (() => {
     _sendMessage("set_level", { level });
   }
 
+  // ── Gestión del Selector de Tutores y Voces ─────────────
+  function _onVoiceChange(newVoiceId) {
+    if (!newVoiceId) return;
+    currentVoiceId = newVoiceId.toLowerCase().trim();
+    localStorage.setItem(STORAGE_KEY_VOICE, currentVoiceId);
+    UIModule.updateTutorChip(currentVoiceId);
+    _sendMessage("set_voice", { voice_id: currentVoiceId });
+    UIModule.showToast(`Tutor: ${currentVoiceId.toUpperCase()} activado`, "info");
+  }
+
+  async function _playVoicePreview() {
+    if (previewAudioObj) {
+      previewAudioObj.pause();
+      previewAudioObj = null;
+      UIModule.setPreviewPlaying(false);
+      return;
+    }
+
+    try {
+      UIModule.setPreviewPlaying(true);
+      const url = `/api/ai/tts/preview?voice_id=${encodeURIComponent(currentVoiceId)}&t=${Date.now()}`;
+      previewAudioObj = new Audio(url);
+
+      previewAudioObj.onended = () => {
+        UIModule.setPreviewPlaying(false);
+        previewAudioObj = null;
+      };
+
+      previewAudioObj.onerror = (err) => {
+        console.warn("[APP] Error al reproducir preview de audio:", err);
+        UIModule.setPreviewPlaying(false);
+        previewAudioObj = null;
+        UIModule.showToast("No se pudo reproducir la muestra de voz.", "warning");
+      };
+
+      await previewAudioObj.play();
+    } catch (err) {
+      console.warn("[APP] Error en reproducción de vista previa:", err);
+      UIModule.setPreviewPlaying(false);
+      previewAudioObj = null;
+    }
+  }
+
   function _speakWebSpeech(text) {
     if (!("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
@@ -353,6 +404,20 @@ const AppModule = (() => {
     document.getElementById("level-select")?.addEventListener("change", (e) => {
       _onLevelChange(e.target.value);
     });
+
+    // Selector de tutor y voz neuronal
+    const voiceDropdown = document.getElementById("voice-selector-dropdown");
+    if (voiceDropdown) {
+      voiceDropdown.addEventListener("change", (e) => {
+        _onVoiceChange(e.target.value);
+      });
+    }
+
+    // Botón de previsualización de voz
+    const previewBtn = document.getElementById("voice-preview-btn");
+    if (previewBtn) {
+      previewBtn.addEventListener("click", _playVoicePreview);
+    }
 
     document.getElementById("clear-btn")?.addEventListener("click", () => {
       const container = document.getElementById("chat-container");

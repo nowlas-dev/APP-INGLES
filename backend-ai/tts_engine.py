@@ -92,6 +92,25 @@ DEFAULT_RATE  = os.environ.get("TTS_RATE", "-3%")    # -2% a -4%: Ritmo reflexiv
 DEFAULT_PITCH = os.environ.get("TTS_PITCH", "+0Hz")  # Resonancia natural
 DEFAULT_VOLUME = os.environ.get("TTS_VOLUME", "+0%")
 
+# ─────────────────────────────────────────────────────────────
+#  Catálogo de Personalidades y Acentos de Tutores Neuronales
+# ─────────────────────────────────────────────────────────────
+
+TUTOR_PROFILES: dict[str, dict[str, str]] = {
+    "dalia":  {"voice": "es-MX-DaliaNeural",  "rate": "-3%", "pitch": "+0Hz"},
+    "jorge":  {"voice": "es-MX-JorgeNeural",  "rate": "+0%", "pitch": "-1Hz"},
+    "paloma": {"voice": "es-US-PalomaNeural", "rate": "-2%", "pitch": "+1Hz"},
+    "alvaro": {"voice": "es-ES-AlvaroNeural", "rate": "-2%", "pitch": "+0Hz"},
+    "elena":  {"voice": "es-ES-ElenaNeural",  "rate": "-4%", "pitch": "+0Hz"},
+}
+
+
+def get_tutor_profile(voice_id: Optional[str] = None) -> dict[str, str]:
+    """Retorna la configuración prosódica del tutor especificado (fallback: dalia)."""
+    if not voice_id:
+        return TUTOR_PROFILES["dalia"]
+    return TUTOR_PROFILES.get(voice_id.strip().lower(), TUTOR_PROFILES["dalia"])
+
 
 # ─────────────────────────────────────────────────────────────
 #  Cache LRU en Memoria (Capacidad 256 items)
@@ -192,9 +211,11 @@ async def synthesize(
     voice: Optional[str] = None,
     rate: Optional[str] = None,
     pitch: Optional[str] = None,
+    voice_id: Optional[str] = None,
 ) -> bytes:
     """
     Sintetiza texto a audio MP3 en memoria con prosodia didáctica y caché LRU.
+    Soporta personalidades de tutor vía voice_id ('dalia', 'jorge', 'paloma', 'alvaro', 'elena').
 
     Args:
         text:        Texto a sintetizar (admite mezclas español/inglés).
@@ -202,6 +223,7 @@ async def synthesize(
         voice:       Nombre exacto de la voz (anula target_lang si se provee).
         rate:        Modulación de velocidad (ej. '-3%', '-5%', '+0%').
         pitch:       Ajuste de tono (ej. '+0Hz', '-2Hz').
+        voice_id:    Clave del tutor ('dalia', 'jorge', 'paloma', 'alvaro', 'elena').
 
     Returns:
         bytes: Buffer binario de audio (MP3 o WAV en fallback).
@@ -212,10 +234,17 @@ async def synthesize(
     # Normalización del texto con soporte de code-switching
     processed_text = preprocess_bilingual_text(text)
 
-    # Selección prosódica
-    selected_voice = voice or VOICE_MAP.get(target_lang, DEFAULT_VOICE)
-    selected_rate  = rate or DEFAULT_RATE
-    selected_pitch = pitch or DEFAULT_PITCH
+    # Selección según perfil del tutor o parámetros individuales
+    profile = get_tutor_profile(voice_id) if (voice_id or not voice) else None
+
+    if profile and not voice:
+        selected_voice = profile["voice"]
+        selected_rate  = rate or profile["rate"]
+        selected_pitch = pitch or profile["pitch"]
+    else:
+        selected_voice = voice or VOICE_MAP.get(target_lang, DEFAULT_VOICE)
+        selected_rate  = rate or DEFAULT_RATE
+        selected_pitch = pitch or DEFAULT_PITCH
 
     # 1. Comprobar Caché LRU en Memoria (0 ms)
     cached_bytes = _TTS_CACHE.get(processed_text, selected_voice, selected_rate, selected_pitch)

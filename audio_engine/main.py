@@ -431,12 +431,24 @@ class SynthesizeRequest(BaseModel):
     target_lang: str = "en-US"
     voice: Optional[str] = None
     rate: Optional[str] = None
+    voice_id: Optional[str] = "dalia"
 
 
 @app.post("/synthesize")
 async def synthesize(req: SynthesizeRequest):
     audio_bytes = await tts_engine.synthesize(
-        req.text, req.target_lang, req.voice, req.rate
+        req.text, req.target_lang, req.voice, req.rate, voice_id=req.voice_id
+    )
+    return Response(content=audio_bytes, media_type="audio/mpeg")
+
+
+@app.get("/api/ai/tts/preview")
+async def tts_preview(voice_id: str = "dalia"):
+    """Previsualización de audio de 2s para el selector interactivo de tutores."""
+    preview_text = "¡Hola! Seré tu guía en esta canción."
+    audio_bytes = await tts_engine.synthesize(
+        preview_text,
+        voice_id=voice_id,
     )
     return Response(content=audio_bytes, media_type="audio/mpeg")
 
@@ -452,6 +464,7 @@ async def ingest(
     target_lang: str = Form(default="en-US"),
     language: Optional[str] = Form(default=None),
     synthesize_audio: bool = Form(default=True),
+    voice_id: Optional[str] = Form(default="dalia"),
 ):
     """
     Pipeline completo de turno conversacional:
@@ -515,7 +528,7 @@ async def ingest(
     audio_b64 = None
     if synthesize_audio and parsed["conversation"]:
         try:
-            tts_bytes = await tts_engine.synthesize(parsed["conversation"], target_lang)
+            tts_bytes = await tts_engine.synthesize(parsed["conversation"], target_lang=target_lang, voice_id=voice_id)
             audio_b64 = base64.b64encode(tts_bytes).decode("ascii")
         except Exception as exc:
             logger.warning(f"Fallo en síntesis TTS (no crítico): {exc}")

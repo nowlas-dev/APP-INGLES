@@ -244,6 +244,169 @@ body::before {
   white-space: nowrap;
 }
 
+/* ── Selector Interactivo de Tutores y Voces Neuronales ───── */
+.tutor-voice-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.tutor-voice-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-full);
+  padding: 4px 12px 4px 10px;
+  gap: 8px;
+  transition: all var(--transition-base);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.tutor-voice-wrapper:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.15);
+}
+
+.tutor-voice-wrapper:focus-within {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+
+.tutor-icon {
+  font-size: 0.95rem;
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  animation: floatSubtle 3s ease-in-out infinite;
+}
+
+@keyframes floatSubtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+.voice-selector-dropdown {
+  background: transparent;
+  color: var(--text-main);
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  padding: 3px 22px 3px 4px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 2px center;
+  max-width: 260px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: color var(--transition-fast);
+}
+
+.voice-selector-dropdown option {
+  background: #111827;
+  color: #f1f5f9;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+}
+
+.tutor-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: var(--radius-full);
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #c7d2fe;
+  pointer-events: none;
+  letter-spacing: 0.3px;
+  transition: all var(--transition-fast);
+}
+
+.region-badge {
+  display: inline-block;
+  padding: 1px 5px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.region-mx {
+  background: rgba(16, 185, 129, 0.25);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.region-us {
+  background: rgba(59, 130, 246, 0.25);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.region-es {
+  background: rgba(245, 158, 11, 0.25);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+/* Botón de Previsualización */
+.voice-preview-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  outline: none;
+}
+
+.voice-preview-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #ffffff;
+  transform: scale(1.08);
+  box-shadow: 0 0 14px rgba(99, 102, 241, 0.4);
+}
+
+.voice-preview-btn:active {
+  transform: scale(0.95);
+}
+
+.voice-preview-btn.playing {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.5);
+  color: var(--color-success);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
+  animation: previewPulse 1s infinite alternate;
+}
+
+@keyframes previewPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.12); }
+}
+
 /* Métricas del Top Bar (Racha, Progreso, CEFR, Estado) */
 .top-meta {
   display: flex;

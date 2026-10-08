@@ -129,12 +129,19 @@ app.post("/api/download", async (req, res) => {
   }
 });
 
-app.post("/api/separate", async (req, res) => {
+// Previsualización de voz de tutor interactivo
+app.get(["/api/ai/tts/preview", "/api/tts/preview"], async (req, res) => {
+  const { voice_id = "dalia" } = req.query;
   try {
-    const r = await axios.post(`${AUDIO_ENGINE_URL}/api/separate`, req.body, { timeout: 180000 });
-    res.json(r.data);
+    const r = await axios.get(`${AUDIO_ENGINE_URL}/api/ai/tts/preview`, {
+      params: { voice_id },
+      responseType: "arraybuffer",
+      timeout: 15000,
+    });
+    res.set("Content-Type", "audio/mpeg");
+    res.send(r.data);
   } catch (err) {
-    res.status(err.response?.status || 500).json({ error: err.response?.data || err.message });
+    res.status(err.response?.status || 500).json({ error: "Error en síntesis de previsualización", detail: err.message });
   }
 });
 
@@ -174,7 +181,7 @@ app.get("*", (_, res) =>
 
 const wss = new WebSocketServer({ server, path: "/ws", maxPayload: 15 * 1024 * 1024 });
 
-wss.on("connection", async (ws) => {
+wss.on("connection", (ws) => {
   const clientId = randomUUID();
   console.log(`[WS] 🔌 Cliente conectado: ${clientId}`);
 
@@ -182,36 +189,47 @@ wss.on("connection", async (ws) => {
   let cefrLevel = "B2";
   const userId  = "usr_001";
 
-  try {
-    const r = await axios.post(
-      `${AUDIO_ENGINE_URL}/session/start`,
-      { user_key: userId, cefr_level: cefrLevel },
-      { timeout: 5000 }
-    );
-    sessionId = r.data.session_id;
-    cefrLevel = r.data.cefr_level || cefrLevel;
-  } catch (err) {
-    console.error("[WS] No se pudo crear sesión en audio_engine:", err.message);
-  }
+  // Registro inmediato de sesión en memoria
+  sessionStore.create(clientId, { sessionId, userId, cefrLevel, ws, voiceId: "dalia" });
 
-  sessionStore.create(clientId, { sessionId, userId, cefrLevel, ws });
+  // Inicialización asíncrona de backend
+  (async () => {
+    try {
+      const r = await axios.post(
+        `${AUDIO_ENGINE_URL}/session/start`,
+        { user_key: userId, cefr_level: cefrLevel },
+        { timeout: 5000 }
+      );
+      sessionId = r.data.session_id;
+      cefrLevel = r.data.cefr_level || cefrLevel;
+      const session = sessionStore.get(clientId);
+      if (session) {
+        session.sessionId = sessionId;
+        session.cefrLevel = cefrLevel;
+      }
+    } catch (err) {
+      console.error("[WS] No se pudo crear sesión en audio_engine:", err.message);
+    }
 
-  let profile = {};
-  try {
-    const r = await axios.get(`${AUDIO_ENGINE_URL}/api/profile`, { timeout: 4000 });
-    profile = r.data;
-  } catch {}
+    let profile = {};
+    try {
+      const r = await axios.get(`${AUDIO_ENGINE_URL}/api/profile`, { timeout: 4000 });
+      profile = r.data;
+    } catch {}
 
-  sessionStore.safeSend(ws, {
-    type: "connected",
-    clientId,
-    sessionId,
-    profile,
-    state:   sessionStore.STATES.IDLE,
-    message: "Conectado a LingoBeats / LingoVibe Orchestrator",
-  });
+    const curVoice = sessionStore.get(clientId)?.voiceId || "dalia";
+    sessionStore.safeSend(ws, {
+      type: "connected",
+      clientId,
+      sessionId,
+      profile,
+      voice_id: curVoice,
+      state:   sessionStore.STATES.IDLE,
+      message: "Conectado a LingoBeats / LingoVibe Orchestrator",
+    });
+  })();
 
-  // ── Dispatcher de Mensajes (Binarios y Texto) ─────────────
+  // ── Dispatcher de Mensajes (Sincrónico para no perder paquetes de inicio) ──
   ws.on("message", async (rawData, isBinary) => {
     const session = sessionStore.get(clientId);
     if (!session) return;
@@ -219,7 +237,7 @@ wss.on("connection", async (ws) => {
     // Caso A: Mensaje Binario Directo (ArrayBuffer / Buffer sin Base64 overhead)
     if (isBinary || (Buffer.isBuffer(rawData) && validateMagicBytes(rawData))) {
       const audioBuffer = Buffer.isBuffer(rawData) ? rawData : Buffer.from(rawData);
-      console.log(`[WS] 📦 Recibido frame de audio binario: ${audioBuffer.length} bytes`);
+      console.log(`[WS] 📦 Recibido frame de audio binario: ${audioBuffer.length} bytes | Tutor: ${session.voiceId || "dalia"}`);
 
       sessionStore.transition(clientId, sessionStore.STATES.PROCESSING);
       const turnSeq = sessionStore.nextTurn(clientId);
@@ -233,6 +251,7 @@ wss.on("connection", async (ws) => {
         form.append("cefr_level", session.cefrLevel);
         form.append("target_lang", "en-US");
         form.append("synthesize_audio", "true");
+        form.append("voice_id", session.voiceId || "dalia");
 
         const r = await axios.post(`${AUDIO_ENGINE_URL}/ingest`, form, {
           headers: form.getHeaders(),
@@ -336,6 +355,18 @@ wss.on("connection", async (ws) => {
       return;
     }
 
+    // Actualización de tutor/voz explícita
+    if (type === "set_voice") {
+      const voiceId = (data.voice_id || data.voice || "dalia").toLowerCase().trim();
+      sessionStore.updateVoice(clientId, voiceId);
+      sessionStore.safeSend(ws, { type: "voice_updated", voice_id: voiceId });
+      return;
+    }
+
+    if (data.voice_id) {
+      sessionStore.updateVoice(clientId, data.voice_id);
+    }
+
     // Audio legado en base64
     if (type === "audio") {
       const { audio_b64, mime_type = "audio/webm", target_lang = "en-US" } = data;
@@ -354,6 +385,7 @@ wss.on("connection", async (ws) => {
         form.append("cefr_level", session.cefrLevel);
         form.append("target_lang", target_lang);
         form.append("synthesize_audio", "true");
+        form.append("voice_id", session.voiceId || "dalia");
 
         const r = await axios.post(`${AUDIO_ENGINE_URL}/ingest`, form, {
           headers: form.getHeaders(),

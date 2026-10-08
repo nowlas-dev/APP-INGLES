@@ -45,6 +45,27 @@
         </span>
       </div>
 
+      <!-- Selector Interactivo de Tutores y Voces Neuronales -->
+      <div class="tutor-voice-container" id="tutor-voice-container" title="Personalidad y acento de voz del tutor">
+        <div class="tutor-voice-wrapper">
+          <span class="tutor-icon" aria-hidden="true">🎧</span>
+          <select id="voice-selector-dropdown" class="voice-selector-dropdown" aria-label="Seleccionar Tutor IA">
+            <option value="dalia" data-region="MX" selected>Dalia (Cálida y pedagógica · México)</option>
+            <option value="jorge" data-region="MX">Jorge (Dinámico y conversacional · México)</option>
+            <option value="paloma" data-region="US">Paloma (Bilingüe y clara · EE.UU.)</option>
+            <option value="alvaro" data-region="ES">Álvaro (Formal y articulado · España)</option>
+            <option value="elena" data-region="ES">Elena (Pausada y didáctica · España)</option>
+          </select>
+          <span class="tutor-chip" id="tutor-active-chip">
+            <span class="region-badge region-mx" id="tutor-region-badge">MX</span>
+            <span class="chip-name" id="tutor-chip-name">Dalia</span>
+          </span>
+        </div>
+        <button id="voice-preview-btn" class="voice-preview-btn" type="button" title="Escuchar muestra de voz (2s)" aria-label="Previsualizar voz de tutor">
+          <span class="preview-icon" aria-hidden="true">🔊</span>
+        </button>
+      </div>
+
       <!-- Métricas y Estado de Sesión -->
       <div class="top-meta">
         <!-- Racha de Práctica -->

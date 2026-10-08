@@ -13,7 +13,8 @@ const UIModule = (() => {
       trackTitleEl, trackArtistEl,
       stanzaPrevEl, stanzaActiveEl, stanzaNextEl,
       stanzaProgressTextEl, songSearchInput, difficultyBadgeEl,
-      playerPlayBtn, playerSpeedBtn;
+      playerPlayBtn, playerSpeedBtn,
+      voiceDropdownEl, tutorChipNameEl, tutorRegionBadgeEl, voicePreviewBtn;
 
   const STATE_CONFIG = {
     IDLE:          { label: "Listo",            class: "state-idle"          },
@@ -24,6 +25,14 @@ const UIModule = (() => {
     FEEDBACK:      { label: "Evaluando…",       class: "state-processing"    },
     COMPREHENSION: { label: "Comprensión",      class: "state-speaking"      },
     ERROR:         { label: "Error",            class: "state-error"         },
+  };
+
+  const TUTOR_META = {
+    dalia:  { name: "Dalia",  region: "MX", class: "region-mx" },
+    jorge:  { name: "Jorge",  region: "MX", class: "region-mx" },
+    paloma: { name: "Paloma", region: "US", class: "region-us" },
+    alvaro: { name: "Álvaro", region: "ES", class: "region-es" },
+    elena:  { name: "Elena",  region: "ES", class: "region-es" },
   };
 
   function init() {
@@ -48,6 +57,11 @@ const UIModule = (() => {
     difficultyBadgeEl    = document.getElementById("song-difficulty-badge");
     playerPlayBtn        = document.getElementById("player-play-btn");
     playerSpeedBtn       = document.getElementById("player-speed-btn");
+
+    voiceDropdownEl      = document.getElementById("voice-selector-dropdown");
+    tutorChipNameEl      = document.getElementById("tutor-chip-name");
+    tutorRegionBadgeEl   = document.getElementById("tutor-region-badge");
+    voicePreviewBtn      = document.getElementById("voice-preview-btn");
   }
 
   function setState(stateName) {
@@ -389,6 +403,34 @@ const UIModule = (() => {
     window.speechSynthesis.speak(utter);
   }
 
+  function setSelectedVoice(voiceId) {
+    const key = (voiceId || "dalia").toLowerCase();
+    if (voiceDropdownEl) voiceDropdownEl.value = key;
+    updateTutorChip(key);
+  }
+
+  function updateTutorChip(voiceId) {
+    const key = (voiceId || "dalia").toLowerCase();
+    const meta = TUTOR_META[key] || TUTOR_META.dalia;
+    if (tutorChipNameEl) tutorChipNameEl.textContent = meta.name;
+    if (tutorRegionBadgeEl) {
+      tutorRegionBadgeEl.textContent = meta.region;
+      tutorRegionBadgeEl.className = `region-badge ${meta.class}`;
+    }
+  }
+
+  function setPreviewPlaying(isPlaying) {
+    if (voicePreviewBtn) {
+      if (isPlaying) {
+        voicePreviewBtn.classList.add("playing");
+        voicePreviewBtn.setAttribute("title", "Reproduciendo muestra de voz...");
+      } else {
+        voicePreviewBtn.classList.remove("playing");
+        voicePreviewBtn.setAttribute("title", "Escuchar muestra de voz (2s)");
+      }
+    }
+  }
+
   return {
     init,
     setState,
@@ -405,6 +447,9 @@ const UIModule = (() => {
     clearInput,
     getSelectedLevel,
     setSelectedLevel,
+    setSelectedVoice,
+    updateTutorChip,
+    setPreviewPlaying,
     setRecordingActive,
     showToast,
   };
