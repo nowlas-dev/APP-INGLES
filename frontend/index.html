@@ -66,6 +66,19 @@
         </button>
       </div>
 
+      <!-- Selector de Actitud Pedagógica del Tutor -->
+      <div class="tutor-attitude-container" id="tutor-attitude-container" title="Actitud y estilo pedagógico del tutor">
+        <div class="tutor-attitude-wrapper">
+          <span class="attitude-icon" id="tutor-attitude-icon" aria-hidden="true">🎭</span>
+          <select id="tutor-attitude-select" class="attitude-selector-dropdown" aria-label="Seleccionar Actitud del Tutor">
+            <option value="friendly">🌟 Amable</option>
+            <option value="funny" selected>🎭 Bromista</option>
+            <option value="strict">🎯 Exigente</option>
+          </select>
+          <span class="attitude-chip" id="tutor-attitude-chip">Bromista</span>
+        </div>
+      </div>
+
       <!-- Métricas y Estado de Sesión -->
       <div class="top-meta">
         <!-- Racha de Práctica -->
@@ -115,9 +128,15 @@
             <h2 class="track-title" id="track-title">Yesterday</h2>
             <span class="track-artist" id="track-artist">The Beatles</span>
           </div>
-          <span class="karaoke-badge" id="karaoke-badge">
-            🎙️ Sincronizado 60 FPS
-          </span>
+          <div class="track-header-actions">
+            <button id="start-song-btn" class="start-song-btn" type="button" title="Comenzar práctica y escuchar saludo del tutor">
+              <span class="start-btn-icon" aria-hidden="true">✨</span>
+              <span class="start-btn-text">Comenzar Canción</span>
+            </button>
+            <span class="karaoke-badge" id="karaoke-badge">
+              🎙️ Sincronizado 60 FPS
+            </span>
+          </div>
         </div>
 
         <!-- Flujo Dinámico de Estrofas (Efecto de Profundidad) -->

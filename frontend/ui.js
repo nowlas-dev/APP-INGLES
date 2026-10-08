@@ -14,17 +14,26 @@ const UIModule = (() => {
       stanzaPrevEl, stanzaActiveEl, stanzaNextEl,
       stanzaProgressTextEl, songSearchInput, difficultyBadgeEl,
       playerPlayBtn, playerSpeedBtn,
-      voiceDropdownEl, tutorChipNameEl, tutorRegionBadgeEl, voicePreviewBtn;
+      voiceDropdownEl, tutorChipNameEl, tutorRegionBadgeEl, voicePreviewBtn,
+      attitudeDropdownEl, tutorAttitudeIconEl, tutorAttitudeChipEl, startSongBtn;
 
   const STATE_CONFIG = {
-    IDLE:          { label: "Listo",            class: "state-idle"          },
-    LISTENING:     { label: "Escuchando…",      class: "state-listening"     },
-    RECORDING:     { label: "Grabando voz…",    class: "state-listening"     },
-    PROCESSING:    { label: "Procesando IA…",   class: "state-processing"    },
-    SPEAKING:      { label: "Tutor hablando…",  class: "state-speaking"      },
-    FEEDBACK:      { label: "Evaluando…",       class: "state-processing"    },
-    COMPREHENSION: { label: "Comprensión",      class: "state-speaking"      },
-    ERROR:         { label: "Error",            class: "state-error"         },
+    IDLE:           { label: "Listo",                                   class: "state-idle"          },
+    INTRO_GREETING: { label: "El tutor te está dando la bienvenida...",  class: "state-speaking"      },
+    PLAYING_STANZA: { label: "Reproduciendo estrofa…",                  class: "state-speaking"      },
+    LISTENING:      { label: "Escuchando…",                             class: "state-listening"     },
+    RECORDING:      { label: "Grabando voz…",                           class: "state-listening"     },
+    PROCESSING:     { label: "Procesando IA…",                          class: "state-processing"    },
+    SPEAKING:       { label: "Tutor hablando…",                         class: "state-speaking"      },
+    FEEDBACK:       { label: "Evaluando…",                              class: "state-processing"    },
+    COMPREHENSION:  { label: "Comprensión",                             class: "state-speaking"      },
+    ERROR:          { label: "Error",                                   class: "state-error"         },
+  };
+
+  const ATTITUDE_META = {
+    friendly: { name: "Amable",   icon: "🌟" },
+    funny:    { name: "Bromista", icon: "🎭" },
+    strict:   { name: "Exigente", icon: "🎯" },
   };
 
   const TUTOR_META = {
@@ -62,6 +71,11 @@ const UIModule = (() => {
     tutorChipNameEl      = document.getElementById("tutor-chip-name");
     tutorRegionBadgeEl   = document.getElementById("tutor-region-badge");
     voicePreviewBtn      = document.getElementById("voice-preview-btn");
+
+    attitudeDropdownEl   = document.getElementById("tutor-attitude-select");
+    tutorAttitudeIconEl  = document.getElementById("tutor-attitude-icon");
+    tutorAttitudeChipEl  = document.getElementById("tutor-attitude-chip");
+    startSongBtn         = document.getElementById("start-song-btn");
   }
 
   function setState(stateName) {
@@ -431,6 +445,30 @@ const UIModule = (() => {
     }
   }
 
+  function setSelectedAttitude(attitude) {
+    const key = (attitude || "funny").toLowerCase();
+    if (attitudeDropdownEl) attitudeDropdownEl.value = key;
+    updateAttitudeChip(key);
+  }
+
+  function updateAttitudeChip(attitude) {
+    const key = (attitude || "funny").toLowerCase();
+    const meta = ATTITUDE_META[key] || ATTITUDE_META.funny;
+    if (tutorAttitudeChipEl) tutorAttitudeChipEl.textContent = meta.name;
+    if (tutorAttitudeIconEl) tutorAttitudeIconEl.textContent = meta.icon;
+  }
+
+  function setStartSongLoading(loading) {
+    const btn = startSongBtn || document.getElementById("start-song-btn");
+    if (!btn) return;
+    btn.disabled = loading;
+    btn.classList.toggle("loading", loading);
+    const textEl = btn.querySelector(".start-btn-text");
+    if (textEl) {
+      textEl.textContent = loading ? "El tutor te saluda..." : "Comenzar Canción";
+    }
+  }
+
   return {
     init,
     setState,
@@ -449,6 +487,9 @@ const UIModule = (() => {
     setSelectedLevel,
     setSelectedVoice,
     updateTutorChip,
+    setSelectedAttitude,
+    updateAttitudeChip,
+    setStartSongLoading,
     setPreviewPlaying,
     setRecordingActive,
     showToast,

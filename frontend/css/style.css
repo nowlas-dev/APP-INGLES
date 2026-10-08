@@ -407,6 +407,92 @@ body::before {
   100% { transform: scale(1.12); }
 }
 
+/* ── Selector de Actitud Pedagógica del Tutor ─────────────── */
+.tutor-attitude-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.tutor-attitude-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-full);
+  padding: 4px 12px 4px 10px;
+  gap: 8px;
+  transition: all var(--transition-base);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.tutor-attitude-wrapper:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(245, 158, 11, 0.4);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.15);
+}
+
+.tutor-attitude-wrapper:focus-within {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+}
+
+.attitude-icon {
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  animation: floatSubtle 3s ease-in-out infinite;
+}
+
+.attitude-selector-dropdown {
+  background: transparent;
+  color: var(--text-main);
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  padding: 3px 22px 3px 4px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 2px center;
+  max-width: 145px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: color var(--transition-fast);
+}
+
+.attitude-selector-dropdown option {
+  background: #111827;
+  color: #f1f5f9;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+}
+
+.attitude-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-full);
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fde68a;
+  pointer-events: none;
+  letter-spacing: 0.3px;
+  transition: all var(--transition-fast);
+}
+
 /* Métricas del Top Bar (Racha, Progreso, CEFR, Estado) */
 .top-meta {
   display: flex;
@@ -577,6 +663,63 @@ body::before {
 .track-artist {
   font-size: 0.82rem;
   color: var(--text-muted);
+}
+
+/* Acciones en la cabecera de la pista */
+.track-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.start-song-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-full);
+  font-family: var(--font-sans);
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.35);
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.start-song-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(168, 85, 247, 0.55);
+  filter: brightness(1.1);
+}
+
+.start-song-btn:active {
+  transform: translateY(0);
+}
+
+.start-song-btn.loading {
+  opacity: 0.85;
+  cursor: wait;
+  pointer-events: none;
+}
+
+.start-song-btn.loading .start-btn-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.start-btn-icon {
+  font-size: 0.95rem;
+  display: inline-block;
+  transition: transform var(--transition-fast);
 }
 
 .karaoke-badge {

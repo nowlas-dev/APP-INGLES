@@ -129,6 +129,63 @@ class SyncPlayer {
   }
 
   /**
+   * Salta a la estrofa indicada por índice (0-based) e inicia la reproducción.
+   * @param {number} [index=0] Índice de la estrofa.
+   * @returns {object|null} La estrofa reproducida o null si no existe.
+   */
+  playStanza(index = 0) {
+    if (!this.stanzas || this.stanzas.length === 0) return null;
+    const clampedIndex = Math.max(0, Math.min(index, this.stanzas.length - 1));
+    this.currentStanzaIndex = clampedIndex;
+    const targetStanza = this.stanzas[clampedIndex];
+
+    if (targetStanza.start_time !== undefined) {
+      this.seek(targetStanza.start_time);
+    }
+    this.onStanzaChange(targetStanza);
+    this.play();
+    return targetStanza;
+  }
+
+  /**
+   * Reproduce un stream o buffer de audio (ej. saludo de bienvenida)
+   * decodificando con Web Audio API y resolviendo al finalizar (onended).
+   * @param {ArrayBuffer|Blob|string} audioSource
+   * @returns {Promise<void>}
+   */
+  async playGreeting(audioSource) {
+    this.pause();
+    if (this.audioContext.state === "suspended") {
+      await this.audioContext.resume();
+    }
+
+    let arrayBuffer;
+    if (typeof audioSource === "string") {
+      const res = await fetch(audioSource);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      arrayBuffer = await res.arrayBuffer();
+    } else if (audioSource instanceof Blob) {
+      arrayBuffer = await audioSource.arrayBuffer();
+    } else if (audioSource instanceof ArrayBuffer) {
+      arrayBuffer = audioSource;
+    } else {
+      throw new Error("Formato de audio no soportado");
+    }
+
+    const decodedBuffer = await this.audioContext.decodeAudioData(arrayBuffer.slice(0));
+    const sourceNode = this.audioContext.createBufferSource();
+    sourceNode.buffer = decodedBuffer;
+    sourceNode.connect(this.audioContext.destination);
+
+    return new Promise((resolve) => {
+      sourceNode.onended = () => {
+        resolve();
+      };
+      sourceNode.start();
+    });
+  }
+
+  /**
    * Bucle de alta frecuencia (rAF) con compensación de deriva entre clocks.
    */
   _tick() {

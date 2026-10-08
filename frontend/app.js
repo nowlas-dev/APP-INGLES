@@ -15,10 +15,13 @@ const AppModule = (() => {
   let isConnected  = false;
   let reconnecting = false;
 
-  // Estado de la voz del tutor
+  // Estado de la voz y actitud del tutor
   const STORAGE_KEY_VOICE = "selected_tutor_voice";
   const LEGACY_STORAGE_KEY_VOICE = "lingobeats_tutor_voice";
+  const STORAGE_KEY_ATTITUDE = "lingobeats_tutor_attitude";
+
   let currentVoiceId      = localStorage.getItem(STORAGE_KEY_VOICE) || localStorage.getItem(LEGACY_STORAGE_KEY_VOICE) || "dalia";
+  let currentAttitude     = localStorage.getItem(STORAGE_KEY_ATTITUDE) || "funny";
   let previewAudioObj     = null;
 
   // Estado de la canción y karaoke sincronizado
@@ -33,7 +36,9 @@ const AppModule = (() => {
   async function init() {
     UIModule.init();
     currentVoiceId = localStorage.getItem(STORAGE_KEY_VOICE) || localStorage.getItem(LEGACY_STORAGE_KEY_VOICE) || "dalia";
+    currentAttitude = localStorage.getItem(STORAGE_KEY_ATTITUDE) || "funny";
     UIModule.setSelectedVoice(currentVoiceId);
+    UIModule.setSelectedAttitude(currentAttitude);
     _setupEventListeners();
     _connect();
     // Cargar automáticamente canción inicial (Yesterday)
@@ -52,7 +57,8 @@ const AppModule = (() => {
       isConnected  = true;
       reconnecting = false;
       console.log("[APP] 🔌 WebSocket conectado con soporte ArrayBuffer.");
-      _sendMessage("set_voice", { voice_id: currentVoiceId });
+      _sendMessage("set_voice", { voice_id: currentVoiceId, voice: currentVoiceId });
+      _sendMessage("set_attitude", { attitude: currentAttitude });
     };
 
     ws.onmessage = async (event) => {
@@ -276,7 +282,13 @@ const AppModule = (() => {
       UIModule.showToast("Sin conexión al servidor", "error");
       return;
     }
-    ws.send(JSON.stringify({ type, voice_id: currentVoiceId, voice: currentVoiceId, ...payload }));
+    ws.send(JSON.stringify({
+      type,
+      voice_id: currentVoiceId,
+      voice: currentVoiceId,
+      attitude: currentAttitude,
+      ...payload
+    }));
   }
 
   function _sendBinary(arrayBuffer) {
@@ -349,6 +361,17 @@ const AppModule = (() => {
     UIModule.showToast(`Tutor: ${currentVoiceId.toUpperCase()} activado`, "info");
   }
 
+  // ── Gestión del Selector de Actitud Pedagógica ───────────
+  function _onAttitudeChange(newAttitude) {
+    if (!newAttitude) return;
+    currentAttitude = newAttitude.toLowerCase().trim();
+    localStorage.setItem(STORAGE_KEY_ATTITUDE, currentAttitude);
+    UIModule.updateAttitudeChip(currentAttitude);
+    _sendMessage("set_attitude", { attitude: currentAttitude });
+    const labels = { friendly: "Amable", funny: "Bromista", strict: "Exigente" };
+    UIModule.showToast(`Actitud del tutor: ${labels[currentAttitude] || currentAttitude}`, "info");
+  }
+
   async function _playVoicePreview() {
     try {
       UIModule.setPreviewPlaying(true);
@@ -360,6 +383,75 @@ const AppModule = (() => {
       UIModule.showToast("No se pudo reproducir la muestra de voz.", "warning");
     } finally {
       UIModule.setPreviewPlaying(false);
+    }
+  }
+
+  /**
+   * Salta y reproduce la estrofa indicada por índice (0-based).
+   * @param {number} [index=0]
+   */
+  async function playStanza(index = 0) {
+    if (!currentStanzas || currentStanzas.length === 0) return;
+    currentStanzaIdx = Math.max(0, Math.min(index, currentStanzas.length - 1));
+    _updateKaraokeView();
+    UIModule.setState("PLAYING_STANZA");
+    _sendMessage("set_state", { state: "PLAYING_STANZA", stanza_idx: currentStanzaIdx });
+
+    // Sincronizar con SyncPlayer o reproducir síntesis fonética de la estrofa
+    const syncPlayer = AudioModule.getPlayer();
+    if (syncPlayer && syncPlayer.stanzas && syncPlayer.stanzas.length > 0) {
+      syncPlayer.playStanza(currentStanzaIdx);
+    } else {
+      _playCurrentStanzaSpeech();
+    }
+  }
+
+  /**
+   * Flujo de inicio de canción con saludo contextual del tutor.
+   * 1. Coloca la UI en estado "El tutor te está dando la bienvenida...".
+   * 2. Petición fetch a /api/session/welcome?song=...&attitude=...&voice=...
+   * 3. Decodifica el audio MP3 mediante AudioContext (Web Audio API).
+   * 4. Espera a que termine la locución del tutor (onended).
+   * 5. Inicia automáticamente la reproducción de la primera estrofa (playStanza(0)).
+   */
+  async function startSongWithWelcome() {
+    UIModule.setStartSongLoading(true);
+
+    try {
+      // 1. Coloca la UI en estado "El tutor te está dando la bienvenida..."
+      UIModule.setState("INTRO_GREETING");
+      UIModule.showToast("El tutor te está dando la bienvenida…", "info");
+      _sendMessage("set_state", { state: "INTRO_GREETING" });
+
+      // 2. Hace una petición fetch a /api/session/welcome
+      const songTitle = currentTrackName || "Yesterday";
+      const artist = currentArtistName || "The Beatles";
+      const welcomeUrl = `/api/session/welcome?song=${encodeURIComponent(songTitle)}&artist=${encodeURIComponent(artist)}&attitude=${encodeURIComponent(currentAttitude)}&voice=${encodeURIComponent(currentVoiceId)}`;
+
+      const response = await fetch(welcomeUrl);
+      if (!response.ok) {
+        throw new Error(`Error en servidor (${response.status})`);
+      }
+
+      // Si el servidor envía el texto del saludo en los encabezados, reflejarlo en el chat
+      const greetingText = response.headers.get("x-greeting-text");
+      if (greetingText) {
+        UIModule.addTutorBubble(greetingText);
+      }
+
+      // 3 y 4. Decodifica el audio MP3 mediante AudioContext y espera a que termine (onended)
+      const arrayBuffer = await response.arrayBuffer();
+      await AudioModule.playAudioBinary(arrayBuffer);
+
+      // 5. Inicia automáticamente la reproducción de la primera estrofa
+      await playStanza(0);
+    } catch (err) {
+      console.warn("[APP] Error en saludo de bienvenida inicial:", err);
+      UIModule.showToast("Iniciando primera estrofa directamente…", "warning");
+      UIModule.setState("IDLE");
+      await playStanza(0);
+    } finally {
+      UIModule.setStartSongLoading(false);
     }
   }
 
@@ -388,10 +480,24 @@ const AppModule = (() => {
       });
     }
 
+    // Selector de actitud pedagógica del tutor
+    const attitudeDropdown = document.getElementById("tutor-attitude-select");
+    if (attitudeDropdown) {
+      attitudeDropdown.addEventListener("change", (e) => {
+        _onAttitudeChange(e.target.value);
+      });
+    }
+
     // Botón de previsualización de voz
     const previewBtn = document.getElementById("voice-preview-btn");
     if (previewBtn) {
       previewBtn.addEventListener("click", _playVoicePreview);
+    }
+
+    // Botón Comenzar Canción
+    const startSongBtn = document.getElementById("start-song-btn");
+    if (startSongBtn) {
+      startSongBtn.addEventListener("click", startSongWithWelcome);
     }
 
     document.getElementById("clear-btn")?.addEventListener("click", () => {
@@ -428,7 +534,15 @@ const AppModule = (() => {
     }
   }
 
-  return { init };
+  return {
+    init,
+    playStanza,
+    startSongWithWelcome,
+  };
 })();
+
+// Exportar globalmente para pruebas y acceso modular en el navegador
+window.AppModule = AppModule;
+window.playStanza = (idx = 0) => AppModule.playStanza(idx);
 
 document.addEventListener("DOMContentLoaded", () => AppModule.init());

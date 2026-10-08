@@ -19,6 +19,8 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 ## [v2.1.0] - 2026-10-08
 
 ### Added
+- **Selector de Actitud del Tutor en Frontend:** Dropdown estilizado Glassmorphism en la barra superior junto al selector de voces, con soporte para 3 actitudes pedagógicas (`friendly`, `funny`, `strict`) y persistencia en `localStorage.getItem('lingobeats_tutor_attitude')`.
+- **Flujo de Bienvenida con AudioContext y Disparo Automático:** Botón "Comenzar Canción", estado reactivo `INTRO_GREETING` ("El tutor te está dando la bienvenida..."), decodificación Web Audio API y transición fluida a `playStanza(0)`.
 - **Proxy Gateway de Streaming de Bienvenida en Node.js:** Endpoint `GET /api/session/welcome` en `backend-core` y `orchestrator` con proxy HTTP streaming binario (`audio/mpeg`) hacia FastAPI y fallback de contingencia.
 - **Expansión de Máquina de Estados de Sesión:** Nuevos estados `INTRO_GREETING` y `PLAYING_STANZA` en `sessionStore.js` con persistencia dinámica de `attitude` y `voice` para el flujo conversacional.
 - **Saludo Contextual de Bienvenida con Personalidad:** Endpoint `GET /api/ai/session/welcome` que genera saludos personalizados según canción y artista con catálogo dinámico de 3 actitudes (`friendly`, `funny`, `strict`) y modulación prosódica en tiempo real en `edge-tts`.
