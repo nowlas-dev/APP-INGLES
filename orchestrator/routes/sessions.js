@@ -1,0 +1,77 @@
+/**
+ * LingoVibe v2 — orchestrator/routes/sessions.js
+ * Gestión de sesiones de práctica.
+ * Delega la persistencia al audio_engine via HTTP (sin acceso directo a SQLite).
+ */
+
+"use strict";
+
+const express = require("express");
+const axios   = require("axios");
+const router  = express.Router();
+
+const AUDIO_ENGINE_URL = process.env.AUDIO_ENGINE_URL || "http://localhost:8000";
+
+/**
+ * POST /api/session/start
+ * Body: { user_key?, cefr_level? }
+ * Crea una nueva sesión en el audio_engine y devuelve session_id.
+ */
+router.post("/start", async (req, res) => {
+  const userKey   = req.body.user_key   || "usr_001";
+  const cefrLevel = (req.body.cefr_level || "B2").toUpperCase();
+
+  try {
+    const r = await axios.post(
+      `${AUDIO_ENGINE_URL}/session/start`,
+      { user_key: userKey, cefr_level: cefrLevel },
+      { timeout: 8000 }
+    );
+    console.log(`[SESSION] 🟢 Sesión creada: id=${r.data.session_id}`);
+    res.json(r.data);
+  } catch (err) {
+    const status = err.response?.status || 502;
+    console.error("[SESSION] Error al crear sesión:", err.message);
+    res.status(status).json({ error: err.response?.data || err.message });
+  }
+});
+
+/**
+ * POST /api/session/end
+ * Body: { session_id, score? }
+ */
+router.post("/end", async (req, res) => {
+  const { session_id, score } = req.body;
+  if (!session_id) return res.status(400).json({ error: "'session_id' requerido." });
+
+  try {
+    const r = await axios.post(
+      `${AUDIO_ENGINE_URL}/session/end`,
+      { session_id, score: score ?? null },
+      { timeout: 8000 }
+    );
+    console.log(`[SESSION] 🔴 Sesión cerrada: id=${session_id}`);
+    res.json(r.data);
+  } catch (err) {
+    const status = err.response?.status || 502;
+    res.status(status).json({ error: err.response?.data || err.message });
+  }
+});
+
+/**
+ * GET /api/session/:id
+ */
+router.get("/:id", async (req, res) => {
+  const sessionId = parseInt(req.params.id, 10);
+  if (isNaN(sessionId)) return res.status(400).json({ error: "session_id debe ser número." });
+
+  try {
+    const r = await axios.get(`${AUDIO_ENGINE_URL}/session/${sessionId}`, { timeout: 5000 });
+    res.json(r.data);
+  } catch (err) {
+    const status = err.response?.status || 502;
+    res.status(status).json({ error: err.response?.data || err.message });
+  }
+});
+
+module.exports = router;

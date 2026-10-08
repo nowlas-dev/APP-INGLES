@@ -1,0 +1,1076 @@
+/**
+ * LingoBeats / LingoVibe — frontend/css/style.css
+ * Sistema de Diseño Visual Premium inspirado en Spotify Lyrics y Duolingo Max.
+ * CSS Moderno: Glassmorphism, Dynamic Island Dock, Animaciones 60fps, Cero Dependencias.
+ */
+
+/* ── 1. TOKENS Y VARIABLES DE DISEÑO ────────────────────────── */
+:root {
+  /* Paleta Base y Superficies */
+  --bg-deep:           #070a12;
+  --bg-base:           #0b0f19;
+  --bg-surface:        #111827;
+  --bg-glass:          rgba(17, 24, 39, 0.72);
+  --bg-glass-elevated: rgba(31, 41, 55, 0.85);
+  --bg-control:        rgba(255, 255, 255, 0.06);
+  --bg-control-hover:  rgba(255, 255, 255, 0.12);
+  --bg-control-active: rgba(255, 255, 255, 0.18);
+
+  /* Bordes y Separadores */
+  --border-subtle:     rgba(255, 255, 255, 0.08);
+  --border-glass:      rgba(255, 255, 255, 0.12);
+  --border-glow:       rgba(99, 102, 241, 0.4);
+
+  /* Tipografía y Colores de Texto */
+  --text-pure:         #ffffff;
+  --text-main:         #f1f5f9;
+  --text-muted:        #94a3b8;
+  --text-subtle:       #64748b;
+
+  /* Gradientes y Acentos */
+  --accent-primary:    #6366f1; /* Electric Violet */
+  --accent-secondary:  #3b82f6; /* Neon Blue */
+  --grad-primary:      linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+  --grad-hover:        linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);
+  --grad-glow:         linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(59, 130, 246, 0.15) 100%);
+
+  /* Estados Fonéticos y Feedback */
+  --color-success:     #10b981; /* Emerald */
+  --color-success-bg:  rgba(16, 185, 129, 0.15);
+  --color-warning:     #f59e0b; /* Amber */
+  --color-warning-bg:  rgba(245, 158, 11, 0.15);
+  --color-error:       #ef4444; /* Coral Red */
+  --color-error-bg:    rgba(239, 68, 68, 0.15);
+
+  /* Radios y Sombras */
+  --radius-xs:         6px;
+  --radius-sm:         10px;
+  --radius-md:         16px;
+  --radius-lg:         24px;
+  --radius-full:       9999px;
+
+  --shadow-sm:         0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-md:         0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg:         0 16px 40px rgba(0, 0, 0, 0.45);
+  --shadow-glass:      0 8px 32px rgba(0, 0, 0, 0.37);
+  --shadow-glow:       0 0 24px rgba(99, 102, 241, 0.35);
+
+  /* Animación */
+  --ease-spring:       cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-smooth:       cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast:   0.15s var(--ease-smooth);
+  --transition-base:   0.25s var(--ease-smooth);
+  --transition-spring: 0.4s var(--ease-spring);
+
+  /* Fuentes */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ── 2. RESET Y ESTRUCTURA BASE ─────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  background-color: var(--bg-deep);
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+/* Fondo Mesh con Resplandor Dinámico */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.14) 0%, transparent 40%),
+    radial-gradient(circle at 85% 25%, rgba(59, 130, 246, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 50% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 90%, rgba(245, 158, 11, 0.05) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+#app-root {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: 64px 1fr auto;
+  height: 100dvh;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ── 3. TOP BAR (BARRA SUPERIOR) ─────────────────────────────── */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-subtle);
+  z-index: 20;
+  gap: 16px;
+}
+
+/* Logo con Ecualizador Animado */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.brand-icon {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  width: 28px;
+  height: 24px;
+  padding: 2px 0;
+}
+
+.brand-icon span {
+  flex: 1;
+  background: var(--grad-primary);
+  border-radius: 2px;
+  animation: eqBounce 1.2s ease-in-out infinite alternate;
+}
+.brand-icon span:nth-child(1) { height: 40%; animation-delay: 0.1s; }
+.brand-icon span:nth-child(2) { height: 90%; animation-delay: 0.3s; }
+.brand-icon span:nth-child(3) { height: 60%; animation-delay: 0.5s; }
+.brand-icon span:nth-child(4) { height: 75%; animation-delay: 0.2s; }
+
+@keyframes eqBounce {
+  0%   { transform: scaleY(0.3); }
+  50%  { transform: scaleY(1.0); }
+  100% { transform: scaleY(0.4); }
+}
+
+.brand-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.brand-title span {
+  background: var(--grad-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.brand-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #a5b4fc;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Buscador / Selector de Canciones */
+.song-selector-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  max-width: 480px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--text-subtle);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.song-search-input {
+  width: 100%;
+  padding: 8px 14px 8px 38px;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  background: var(--bg-control);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  outline: none;
+  transition: var(--transition-fast);
+}
+
+.song-search-input:focus {
+  border-color: var(--accent-primary);
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.song-search-input::placeholder {
+  color: var(--text-subtle);
+}
+
+.difficulty-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--color-success);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  white-space: nowrap;
+}
+
+/* Métricas del Top Bar (Racha, Progreso, CEFR, Estado) */
+.top-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.streak-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+}
+
+.progress-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+}
+
+.level-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.level-select {
+  background: var(--bg-control);
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: var(--transition-fast);
+}
+.level-select:focus {
+  border-color: var(--accent-primary);
+}
+
+/* Estado de Conexión */
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.state-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.state-idle       { background: var(--color-success); box-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
+.state-listening  { background: var(--accent-secondary); box-shadow: 0 0 10px rgba(59, 130, 246, 0.6); animation: dotPulse 1.2s infinite; }
+.state-processing { background: var(--color-warning); box-shadow: 0 0 10px rgba(245, 158, 11, 0.6); animation: dotPulse 0.8s infinite; }
+.state-speaking   { background: var(--accent-primary); box-shadow: 0 0 12px rgba(99, 102, 241, 0.7); animation: dotPulse 1s infinite; }
+.state-error      { background: var(--color-error); box-shadow: 0 0 8px rgba(239, 68, 68, 0.5); }
+
+@keyframes dotPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.35); opacity: 0.6; }
+}
+
+/* ── 4. ÁREA CENTRAL (DUAL WORKSPACE) ────────────────────────── */
+.main-workspace {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  padding: 16px 20px 96px 20px;
+  gap: 20px;
+}
+
+/* Modo Tabs para cambiar de vista (móvil y alternancia) */
+.view-tabs {
+  display: none; /* Visible en pantallas pequeñas */
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-glass-elevated);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-full);
+  padding: 3px;
+  z-index: 15;
+}
+
+.tab-btn {
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.tab-btn.active {
+  background: var(--grad-primary);
+  color: var(--text-pure);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── 5. PANEL DE LETRAS (MODO KARAOKE DIDÁCTICO) ─────────────── */
+.lyrics-stage {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  height: 100%;
+  padding: 24px 32px;
+  border-radius: var(--radius-lg);
+  background: radial-gradient(circle at center, rgba(30, 41, 59, 0.45) 0%, rgba(15, 23, 42, 0.65) 100%);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(16px);
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Cabecera del reproductor sobre el texto */
+.lyrics-header {
+  position: absolute;
+  top: 20px;
+  left: 28px;
+  right: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.track-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.track-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-pure);
+  letter-spacing: -0.015em;
+}
+
+.track-artist {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.karaoke-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+/* Flujo de Estrofas (Efecto de Profundidad Spotify Lyrics) */
+.stanzas-stream {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 640px;
+  text-align: center;
+  margin: auto 0;
+  transition: transform 0.4s var(--ease-spring);
+}
+
+/* Estrofa Anterior y Posterior Atenuadas */
+.stanza-dimmed {
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--text-subtle);
+  opacity: 0.32;
+  transform: scale(0.95);
+  filter: blur(0.5px);
+  transition: opacity 0.3s, transform 0.3s, filter 0.3s;
+  cursor: pointer;
+  line-height: 1.6;
+}
+
+.stanza-dimmed:hover {
+  opacity: 0.55;
+  filter: blur(0);
+}
+
+/* Estrofa Activa (Centro de Atención) */
+.stanza-active {
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -0.025em;
+  color: var(--text-pure);
+  padding: 16px 24px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 32px rgba(99, 102, 241, 0.12);
+  transform: scale(1);
+  transition: all 0.35s var(--ease-spring);
+  width: 100%;
+}
+
+/* Resaltado Interactivo Palabra por Palabra */
+.stanza-words {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 12px;
+}
+
+.word-token {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0 2px;
+  transition: color 0.2s, text-shadow 0.2s, transform 0.15s;
+}
+
+.word-token:hover {
+  transform: translateY(-2px);
+}
+
+/* Estado: En Espera */
+.word-pending {
+  color: var(--text-main);
+}
+
+/* Estado: Éxito Fonético (Verde Esmeralda Brillante) */
+.word-success {
+  color: var(--color-success);
+  text-shadow: 0 0 14px rgba(16, 185, 129, 0.6);
+  font-weight: 800;
+}
+
+/* Estado: Error Fonético / Alerta (Subrayado Punteado + Tooltip) */
+.word-warning {
+  color: var(--color-warning);
+  text-decoration: underline wavy var(--color-warning) 2px;
+  text-underline-offset: 6px;
+}
+
+/* Tooltip Fonético al Hover/Click */
+.word-token[data-phonetic]::after {
+  content: attr(data-phonetic);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: 4px 10px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-glass);
+  color: #fbbf24;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  box-shadow: var(--shadow-md);
+  z-index: 30;
+}
+
+.word-token[data-phonetic]:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── 6. PANEL DERECHO: TUTOR CHAT & FEEDBACK (DUOLINGO MAX) ─── */
+.tutor-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: var(--radius-lg);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(16px);
+  overflow: hidden;
+}
+
+.pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.tutor-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tutor-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--grad-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+}
+
+.tutor-info h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-pure);
+}
+.tutor-info span {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Contenedor de Chat */
+#chat-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-behavior: smooth;
+}
+
+/* Burbujas Estilo Duolingo Max */
+.bubble-wrapper {
+  display: flex;
+  flex-direction: column;
+  max-width: 85%;
+  animation: bubblePop 0.25s var(--ease-spring);
+}
+
+@keyframes bubblePop {
+  0%   { opacity: 0; transform: translateY(8px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.bubble-wrapper.user  { align-self: flex-end; align-items: flex-end; }
+.bubble-wrapper.tutor { align-self: flex-start; align-items: flex-start; }
+
+.bubble {
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.bubble-user {
+  background: var(--grad-primary);
+  color: var(--text-pure);
+  border-bottom-right-radius: 4px;
+  box-shadow: var(--shadow-sm);
+}
+
+.bubble-tutor {
+  background: var(--bg-surface);
+  color: var(--text-main);
+  border: 1px solid var(--border-glass);
+  border-bottom-left-radius: 4px;
+  box-shadow: var(--shadow-sm);
+}
+
+.bubble-time {
+  font-size: 0.68rem;
+  color: var(--text-subtle);
+  margin-top: 4px;
+  padding: 0 4px;
+}
+
+/* Mensajes de Sistema / Status Pills */
+.system-msg {
+  align-self: center;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 4px 14px;
+  border-radius: var(--radius-full);
+  background: var(--bg-control);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  max-width: 90%;
+  text-align: center;
+}
+.system-success  { color: var(--color-success); border-color: rgba(16, 185, 129, 0.3); background: var(--color-success-bg); }
+.system-error    { color: var(--color-error); border-color: rgba(239, 68, 68, 0.3); background: var(--color-error-bg); }
+.system-warning  { color: var(--color-warning); border-color: rgba(245, 158, 11, 0.3); background: var(--color-warning-bg); }
+.system-transcript { color: #93c5fd; font-style: italic; }
+
+/* Tarjeta Emergente de Feedback Fonético */
+#feedback-panel {
+  margin: 12px 20px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  font-size: 0.85rem;
+  color: #fde68a;
+  animation: slideUp 0.3s var(--ease-spring);
+  box-shadow: var(--shadow-sm);
+}
+
+#feedback-panel.hidden {
+  display: none;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Barra de Estadísticas */
+#stats {
+  padding: 8px 20px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.75rem;
+  color: var(--text-subtle);
+  text-align: center;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* ── 7. DOCK INFERIOR FLOTANTE (DYNAMIC ISLAND CONTROLS) ─────── */
+.bottom-dock {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 40px);
+  max-width: 880px;
+  background: var(--bg-glass-elevated);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), var(--shadow-glow);
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 50;
+  transition: all 0.3s var(--ease-spring);
+}
+
+/* Barra de Progreso Milimétrica (Visualizador de Nivel / Scrubber) */
+.dock-progress-wrapper {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background: var(--bg-control);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+#visualizer-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--grad-primary);
+  border-radius: var(--radius-full);
+  transition: width 0.06s ease-out, background 0.2s;
+}
+
+/* Fila de Controles Dinámicos */
+.dock-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Controles de Reproducción Musical */
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  background: var(--bg-control);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.ctrl-btn:hover:not(:disabled) {
+  background: var(--bg-control-hover);
+  border-color: var(--border-glass);
+  transform: translateY(-1px);
+}
+
+.ctrl-btn:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.ctrl-btn-play {
+  width: 44px;
+  height: 44px;
+  background: var(--grad-primary);
+  color: var(--text-pure);
+  border: none;
+  font-size: 1.1rem;
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
+}
+.ctrl-btn-play:hover:not(:disabled) {
+  background: var(--grad-hover);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+}
+
+.speed-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  background: var(--bg-control);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+.speed-badge:hover {
+  color: var(--text-pure);
+  border-color: var(--accent-primary);
+}
+
+/* Botón Central de Micrófono con Ondas Concéntricas */
+.record-trigger-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#record-btn {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--bg-control);
+  border: 2px solid var(--border-glass);
+  color: var(--text-pure);
+  font-size: 1.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s var(--ease-spring);
+  z-index: 2;
+}
+
+#record-btn:hover:not(:disabled):not(.recording) {
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.15);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.35);
+  transform: scale(1.05);
+}
+
+/* Modo Grabación Activo: Anillos Concéntricos Pulsantes */
+#record-btn.recording {
+  background: var(--color-error);
+  border-color: #fca5a5;
+  box-shadow: 0 0 28px rgba(239, 68, 68, 0.65);
+  animation: micPulse 1.2s infinite;
+}
+
+@keyframes micPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+
+.concentric-rings {
+  position: absolute;
+  inset: -12px;
+  border-radius: var(--radius-full);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+#record-btn.recording ~ .concentric-rings {
+  opacity: 1;
+}
+
+.concentric-rings span {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  border: 2px solid rgba(239, 68, 68, 0.4);
+  animation: waveSpread 1.6s ease-out infinite;
+}
+
+.concentric-rings span:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+@keyframes waveSpread {
+  0% { transform: scale(0.85); opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* Entrada de Texto Rápida / Pregunta de Comprensión */
+.text-interaction-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 420px;
+}
+
+#text-input {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 0.88rem;
+  color: var(--text-pure);
+  background: var(--bg-control);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  outline: none;
+  resize: none;
+  height: 42px;
+  max-height: 90px;
+  font-family: inherit;
+  transition: var(--transition-fast);
+}
+
+#text-input:focus {
+  border-color: var(--accent-primary);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+#text-input::placeholder {
+  color: var(--text-subtle);
+}
+
+#send-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  height: 42px;
+  border-radius: var(--radius-full);
+  background: var(--grad-primary);
+  color: var(--text-pure);
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+#send-btn:hover:not(:disabled) {
+  background: var(--grad-hover);
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
+}
+
+#clear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-subtle);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+#clear-btn:hover {
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+
+/* ── 8. SISTEMA DE TOASTS FLOTANTES ─────────────────────────── */
+.toast {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  font-weight: 500;
+  background: var(--bg-glass-elevated);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glass);
+  color: var(--text-main);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transform: translateY(-12px) scale(0.95);
+  transition: all 0.3s var(--ease-spring);
+  z-index: 100;
+  max-width: 360px;
+}
+
+.toast.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.toast-success { border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7; }
+.toast-error   { border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; }
+.toast-warning { border-color: rgba(245, 158, 11, 0.4); color: #fde68a; }
+
+/* ── 9. SCROLLBAR ELEGANTE ───────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ── 10. DISEÑO RESPONSIVO (BREAKPOINTS) ─────────────────────── */
+@media (max-width: 1024px) {
+  .main-workspace {
+    grid-template-columns: 1fr;
+    padding-bottom: 120px;
+  }
+
+  .view-tabs {
+    display: flex;
+  }
+
+  /* Ocultar una u otra vista según tab activo en móvil/tablet */
+  .workspace-pane {
+    display: none;
+  }
+  .workspace-pane.active {
+    display: flex;
+  }
+
+  .bottom-dock {
+    width: calc(100% - 24px);
+    bottom: 12px;
+    padding: 10px 14px;
+  }
+
+  .song-selector-container {
+    max-width: 280px;
+  }
+}
+
+@media (max-width: 640px) {
+  .top-bar {
+    padding: 0 12px;
+  }
+
+  .brand-badge, .progress-pill {
+    display: none;
+  }
+
+  .song-selector-container {
+    display: none; /* Simplificado para pantallas muy estrechas */
+  }
+
+  .stanza-active {
+    font-size: 1.45rem;
+  }
+
+  .stanza-dimmed {
+    font-size: 0.95rem;
+  }
+
+  .dock-content {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .text-interaction-bar {
+    max-width: 100%;
+    order: 2;
+  }
+}

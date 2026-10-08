@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>LingoVibe - AI Real-Time Voice Tutor</title>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#090d16" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="LingoVibe" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%236366f1'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='45' font-family='sans-serif' font-weight='bold'>LV</text></svg>" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --bg-card: rgba(22, 28, 45, 0.75);
+      --primary: #6366f1;
+      --primary-glow: rgba(99, 102, 241, 0.4);
+      --secondary: #06b6d4;
+      --accent-feedback: #f59e0b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --glass-blur: blur(16px);
+      --success: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.18) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.15) 0px, transparent 50%);
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 480px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 18px calc(24px + env(safe-area-inset-bottom));
+      position: relative;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-top: env(safe-area-inset-top);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: #fff;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+
+    .brand-title h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(120deg, #fff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-title span {
+      font-size: 11px;
+      color: var(--secondary);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #34d399;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    /* Level Selector */
+    .level-bar {
+      display: flex;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 16px;
+      gap: 4px;
+    }
+
+    .level-btn {
+      flex: 1;
+      padding: 7px 0;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .level-btn.active {
+      background: linear-gradient(135deg, var(--primary), #4f46e5);
+      color: #fff;
+      box-shadow: 0 2px 8px var(--primary-glow);
+    }
+
+    /* Visualizer Section */
+    .visualizer-card {
+      background: var(--bg-card);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 16px 16px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      margin-bottom: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    #orbCanvas {
+      width: 200px;
+      height: 200px;
+      display: block;
+    }
+
+    .orb-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Chat & Transcript Area */
+    .dialog-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 14px;
+      min-height: 140px;
+      max-height: 220px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .dialog-area::-webkit-scrollbar {
+      width: 4px;
+    }
+    .dialog-area::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.15);
+      border-radius: 4px;
+    }
+
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.45;
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    .bubble.user {
+      align-self: flex-end;
+      background: rgba(99, 102, 241, 0.25);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      color: #e0e7ff;
+      border-bottom-right-radius: 4px;
+      max-width: 85%;
+    }
+
+    .bubble.tutor {
+      align-self: flex-start;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      border-bottom-left-radius: 4px;
+      max-width: 90%;
+    }
+
+    /* Feedback Card */
+    .feedback-card {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(217, 119, 6, 0.05));
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      display: none;
+      animation: slideUp 0.35s ease forwards;
+      backdrop-filter: var(--glass-blur);
+    }
+
+    .feedback-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--accent-feedback);
+      margin-bottom: 8px;
+    }
+
+    .feedback-content {
+      font-size: 13px;
+      color: #fef3c7;
+      line-height: 1.45;
+    }
+
+    .feedback-content div {
+      margin-bottom: 5px;
+    }
+
+    /* Quick Test Pills */
+    .quick-tests {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .test-pill {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .test-pill:hover {
+      background: rgba(99, 102, 241, 0.2);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .text-input {
+      flex: 1;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 12px 16px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .text-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-glow);
+    }
+
+    .send-btn {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border: none;
+      color: #fff;
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      transition: transform 0.15s;
+    }
+
+    .send-btn:active {
+      transform: scale(0.95);
+    }
+
+    .mic-button-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    .mic-btn {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #6366f1, #3b82f6);
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 24px var(--primary-glow);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+    }
+
+    .mic-btn svg {
+      width: 28px;
+      height: 28px;
+      fill: currentColor;
+    }
+
+    .mic-btn.listening {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.7);
+      transform: scale(1.08);
+      animation: pulseMic 1.5s infinite;
+    }
+
+    .stats-footer {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      padding: 0 4px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulseMic {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+      70% { box-shadow: 0 0 0 16px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="logo-icon">LV</div>
+        <div class="brand-title">
+          <h1>LingoVibe</h1>
+          <span>Real-Time Voice Tutor</span>
+        </div>
+      </div>
+      <div class="status-badge" id="wsStatus">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Connected</span>
+      </div>
+    </header>
+
+    <!-- Level Selector -->
+    <div class="level-bar">
+      <button class="level-btn" onclick="setLevel('A0')">A0</button>
+      <button class="level-btn" onclick="setLevel('A1-A2')">A1-A2</button>
+      <button class="level-btn active" id="btn-B2" onclick="setLevel('B2')">B1-B2</button>
+      <button class="level-btn" onclick="setLevel('C1-C2')">C1-C2</button>
+    </div>
+
+    <!-- Reactive Audio Orb Canvas -->
+    <div class="visualizer-card">
+      <canvas id="orbCanvas" width="300" height="300"></canvas>
+      <div class="orb-label" id="orbLabel">
+        <span>✨ Listening / Ready</span>
+      </div>
+    </div>
+
+    <!-- Dynamic Dialog Area -->
+    <div class="dialog-area" id="dialogArea">
+      <div class="bubble tutor">
+        Hey there! I'm LingoVibe, your adaptive AI voice tutor. Ready to practice speaking naturally? Tap the mic or pick a quick test below!
+      </div>
+    </div>
+
+    <!-- Visual Feedback Card -->
+    <div class="feedback-card" id="feedbackCard">
+      <div class="feedback-header">
+        <span>💡 Tutor Feedback</span>
+      </div>
+      <div class="feedback-content" id="feedbackContent">
+      </div>
+    </div>
+
+    <!-- Quick Test Prompts -->
+    <div class="quick-tests">
+      <button class="test-pill" onclick="sendQuickPrompt('I am thinking on using a clean UI and it depends of user needs.')">⚡ Test Prepositions</button>
+      <button class="test-pill" onclick="sendQuickPrompt('If the connection drop, I will reconnect. If I would have more time, I would test it.')">⚡ Test Conditionals</button>
+      <button class="test-pill" onclick="sendQuickPrompt('I want to make the voice experience seamless and responsive on mobile.')">✨ Perfect Sentence</button>
+    </div>
+
+    <!-- Voice / Input Controls -->
+    <div class="controls">
+      <div class="input-row">
+        <input type="text" id="textInput" class="text-input" placeholder="Type or tap the mic..." onkeydown="handleKeyPress(event)" />
+        <button class="send-btn" onclick="sendTextMessage()">➤</button>
+      </div>
+
+      <div class="mic-button-wrapper">
+        <button class="mic-btn" id="micBtn" onclick="toggleVoiceCapture(event)" title="Tap to Speak">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="stats-footer">
+        <span id="turnCounter">Turns Completed: 4</span>
+        <span id="targetLang">Target: English (en-US)</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 1. Cross-browser SpeechRecognition prefix
+    window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    // Register PWA Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then((reg) => console.log('[PWA] Service Worker registered:', reg.scope))
+          .catch((err) => console.warn('[PWA] Service Worker registration failed:', err));
+      });
+    }
+
+    // State Variables
+    let currentLevel = 'B2';
+    let socket = null;
+    let isListening = false;
+    let recognition = null;
+    let synth = window.speechSynthesis;
+    let audioState = 'idle'; // 'idle', 'listening', 'speaking'
+    
+    // MediaRecorder Fallback State (iOS / HTTP local)
+    let mediaStream = null;
+    let mediaRecorder = null;
+    let recordedAudioChunks = [];
+    let audioContext = null;
+    let analyser = null;
+    let micVolume = 0;
+
+    // Canvas Orb Visualizer
+    const canvas = document.getElementById('orbCanvas');
+    const ctx = canvas.getContext('2d');
+    let angle = 0;
+
+    function renderOrb() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      
+      let baseRadius = 55;
+      let pulseMultiplier = 1.0;
+      let primaryColor = 'rgba(99, 102, 241, ';
+      let glowColor = 'rgba(6, 182, 212, ';
+
+      if (audioState === 'listening') {
+        baseRadius = 65;
+        const dynamicBoost = micVolume > 0 ? (micVolume / 128) * 0.4 : 0;
+        pulseMultiplier = 1.25 + Math.sin(angle * 6) * 0.15 + dynamicBoost;
+        primaryColor = 'rgba(239, 68, 68, ';
+        glowColor = 'rgba(249, 115, 22, ';
+      } else if (audioState === 'speaking') {
+        baseRadius = 60;
+        pulseMultiplier = 1.15 + Math.sin(angle * 4) * 0.12;
+        primaryColor = 'rgba(16, 185, 129, ';
+        glowColor = 'rgba(99, 102, 241, ';
+      } else {
+        pulseMultiplier = 1.0 + Math.sin(angle * 1.5) * 0.04;
+      }
+
+      // Outer glowing wave rings
+      for (let i = 3; i >= 1; i--) {
+        const ringRadius = (baseRadius + i * 18) * pulseMultiplier;
+        const gradient = ctx.createRadialGradient(centerX, centerY, baseRadius, centerX, centerY, ringRadius);
+        gradient.addColorStop(0, primaryColor + (0.35 / i) + ')');
+        gradient.addColorStop(1, 'rgba(0,0,0,0)');
+        
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+      }
+
+      // Central Orb
+      const coreGradient = ctx.createRadialGradient(centerX - 15, centerY - 15, 10, centerX, centerY, baseRadius * pulseMultiplier);
+      coreGradient.addColorStop(0, '#ffffff');
+      coreGradient.addColorStop(0.3, glowColor + '0.9)');
+      coreGradient.addColorStop(0.8, primaryColor + '0.8)');
+      coreGradient.addColorStop(1, primaryColor + '0.2)');
+
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, baseRadius * pulseMultiplier, 0, Math.PI * 2);
+      ctx.fillStyle = coreGradient;
+      ctx.shadowColor = primaryColor + '0.8)';
+      ctx.shadowBlur = 25;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Update mic volume if active
+      if (analyser && isListening) {
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let j = 0; j < dataArray.length; j++) sum += dataArray[j];
+        micVolume = sum / dataArray.length;
+      }
+
+      angle += 0.04;
+      requestAnimationFrame(renderOrb);
+    }
+    renderOrb();
+
+    // Unlock Audio Context & Synth on User Gesture (Critical for Safari iOS)
+    function unlockMobileAudio() {
+      if (!audioContext) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) audioContext = new AudioCtx();
+      }
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      if (synth && synth.speaking) {
+        synth.cancel();
+      }
+    }
+
+    // WebSocket Connection
+    function connectWebSocket() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws/voice-chat`;
+      
+      socket = new WebSocket(wsUrl);
+
+      socket.onopen = () => {
+        document.getElementById('statusDot').style.background = '#10b981';
+        document.getElementById('statusText').innerText = 'Connected';
+      };
+
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        handleTutorMessage(data);
+      };
+
+      socket.onclose = () => {
+        document.getElementById('statusDot').style.background = '#f59e0b';
+        document.getElementById('statusText').innerText = 'Reconnecting...';
+        setTimeout(connectWebSocket, 2500);
+      };
+
+      socket.onerror = (err) => {
+        console.error('WebSocket Error:', err);
+      };
+    }
+    connectWebSocket();
+
+    // Handle Incoming Tutor Message
+    function handleTutorMessage(data) {
+      if (data.type === 'connected') {
+        if (data.api_key_configured === false) {
+          addMessageBubble('⚠️ Warning: No GEMINI_API_KEY detected in server environment or .env file. Please configure your API key to chat.', 'tutor');
+        }
+      } else if (data.type === 'error') {
+        addMessageBubble(`❌ ${data.message}`, 'tutor');
+        audioState = 'idle';
+        document.getElementById('orbLabel').innerHTML = '<span>⚠️ Error</span>';
+      } else if (data.type === 'tutor_response') {
+        const speechText = data.conversation;
+        const feedbackText = data.feedback;
+
+        // 1. Add Tutor message bubble
+        addMessageBubble(speechText, 'tutor');
+
+        // 2. Play Audio Speech ONLY with conversation part
+        speakText(speechText);
+
+        // 3. Update Visual Feedback Card
+        const feedbackCard = document.getElementById('feedbackCard');
+        const feedbackContent = document.getElementById('feedbackContent');
+        if (feedbackText) {
+          const formatted = feedbackText.split('\n')
+            .filter(line => line.trim().length > 0)
+            .map(line => `<div>${line.replace(/^\*\s*/, '• ')}</div>`)
+            .join('');
+          feedbackContent.innerHTML = formatted;
+          feedbackCard.style.display = 'block';
+        } else {
+          feedbackCard.style.display = 'none';
+        }
+
+        // 4. Update Stats
+        if (data.stats && data.stats.total_turns !== undefined) {
+          document.getElementById('turnCounter').innerText = `Turns Completed: ${data.stats.total_turns}`;
+        }
+      }
+    }
+
+    // TTS Synthesis
+    function speakText(text) {
+      if (!synth) return;
+      synth.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      utterance.onstart = () => {
+        audioState = 'speaking';
+        document.getElementById('orbLabel').innerHTML = '<span>🔊 LingoVibe Speaking...</span>';
+      };
+
+      utterance.onend = () => {
+        audioState = 'idle';
+        document.getElementById('orbLabel').innerHTML = '<span>✨ Listening / Ready</span>';
+      };
+
+      synth.speak(utterance);
+    }
+
+    // Explicit Voice Capture Handling (SpeechRecognition + MediaRecorder Fallback for iOS Safari)
+    async function toggleVoiceCapture(event) {
+      unlockMobileAudio();
+
+      if (isListening) {
+        stopVoiceCapture();
+        return;
+      }
+
+      // Try Native SpeechRecognition first
+      if (window.SpeechRecognition) {
+        try {
+          if (!recognition) {
+            recognition = new window.SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+              isListening = true;
+              audioState = 'listening';
+              document.getElementById('micBtn').classList.add('listening');
+              document.getElementById('orbLabel').innerHTML = '<span>🎙️ Listening to you...</span>';
+            };
+
+            recognition.onresult = (e) => {
+              const transcript = e.results[0][0].transcript;
+              if (transcript) sendMessage(transcript);
+            };
+
+            recognition.onerror = (e) => {
+              console.warn('SpeechRecognition error or not allowed, switching to MediaRecorder fallback:', e);
+              stopVoiceCapture();
+              // Fallback to MediaRecorder
+              startMediaRecorderCapture();
+            };
+
+            recognition.onend = () => {
+              stopVoiceCapture();
+            };
+          }
+
+          recognition.start();
+          return;
+        } catch (err) {
+          console.warn('SpeechRecognition start failed, trying MediaRecorder:', err);
+        }
+      }
+
+      // Fallback: MediaRecorder capture (Universal on iOS / Android / Desktop)
+      await startMediaRecorderCapture();
+    }
+
+    async function startMediaRecorderCapture() {
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          alert('Microphone access is not supported on this browser. Please type your message below.');
+          return;
+        }
+
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // Setup Web Audio Analyser for Orb Pulsing
+        if (audioContext) {
+          const source = audioContext.createMediaStreamSource(mediaStream);
+          analyser = audioContext.createAnalyser();
+          analyser.fftSize = 64;
+          source.connect(analyser);
+        }
+
+        recordedAudioChunks = [];
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 
+                         (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
+        
+        mediaRecorder = mimeType ? new MediaRecorder(mediaStream, { mimeType }) : new MediaRecorder(mediaStream);
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            recordedAudioChunks.push(e.data);
+          }
+        };
+
+        mediaRecorder.onstop = async () => {
+          if (recordedAudioChunks.length > 0) {
+            const audioBlob = new Blob(recordedAudioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+            sendAudioBlob(audioBlob, mediaRecorder.mimeType || 'audio/webm');
+          }
+          if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null;
+          }
+        };
+
+        mediaRecorder.start();
+        isListening = true;
+        audioState = 'listening';
+        document.getElementById('micBtn').classList.add('listening');
+        document.getElementById('orbLabel').innerHTML = '<span>🎙️ Recording audio (Tap to finish)...</span>';
+
+      } catch (err) {
+        console.error('Microphone access denied or error:', err);
+        alert('Please allow microphone permissions in Safari/browser settings to speak with LingoVibe.');
+        stopVoiceCapture();
+      }
+    }
+
+    function stopVoiceCapture() {
+      isListening = false;
+      audioState = 'idle';
+      micVolume = 0;
+      document.getElementById('micBtn').classList.remove('listening');
+      document.getElementById('orbLabel').innerHTML = '<span>✨ Listening / Ready</span>';
+
+      if (recognition) {
+        try { recognition.stop(); } catch(e) {}
+      }
+
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+    }
+
+    // Send Audio Blob over WebSocket / REST
+    function sendAudioBlob(blob, mimeType) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64Data = reader.result.split(',')[1];
+        addMessageBubble('🎙️ [Voice Audio Sent]', 'user');
+
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({
+            type: 'message',
+            audio_b64: base64Data,
+            mime_type: mimeType,
+            level: currentLevel
+          }));
+        } else {
+          fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              audio_b64: base64Data,
+              mime_type: mimeType,
+              level: currentLevel
+            })
+          })
+          .then(res => res.json())
+          .then(data => handleTutorMessage({ type: 'tutor_response', ...data }));
+        }
+      };
+      reader.readAsDataURL(blob);
+    }
+
+    // Messaging
+    function sendMessage(text) {
+      if (!text.trim()) return;
+
+      addMessageBubble(text, 'user');
+      
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+          type: 'message',
+          text: text,
+          level: currentLevel
+        }));
+      } else {
+        fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text, level: currentLevel })
+        })
+        .then(res => res.json())
+        .then(data => handleTutorMessage({ type: 'tutor_response', ...data }));
+      }
+    }
+
+    function sendTextMessage() {
+      const input = document.getElementById('textInput');
+      const text = input.value.trim();
+      if (text) {
+        sendMessage(text);
+        input.value = '';
+      }
+    }
+
+    function sendQuickPrompt(text) {
+      sendMessage(text);
+    }
+
+    function handleKeyPress(e) {
+      if (e.key === 'Enter') {
+        sendTextMessage();
+      }
+    }
+
+    function addMessageBubble(text, sender) {
+      const dialogArea = document.getElementById('dialogArea');
+      const bubble = document.createElement('div');
+      bubble.className = `bubble ${sender}`;
+      bubble.innerText = text;
+      dialogArea.appendChild(bubble);
+      dialogArea.scrollTop = dialogArea.scrollHeight;
+    }
+
+    function setLevel(lvl) {
+      currentLevel = lvl;
+      document.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'set_level', level: lvl }));
+      }
+    }
+  </script>
+</body>
+</html>

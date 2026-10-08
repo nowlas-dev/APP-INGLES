@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="LingoBeats / LingoVibe — Tutor de idiomas con IA y Karaoke Didáctico" />
+  <title>LingoBeats — Spotify Lyrics + Duolingo Max Experience</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <div id="app-root">
+
+    <!-- ── 1. TOP BAR (BARRA SUPERIOR) ────────────────────────── -->
+    <header class="top-bar">
+      <!-- Logotipo con Ecualizador Animado -->
+      <div class="brand" id="brand-home" title="LingoBeats v2">
+        <div class="brand-icon" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="brand-title">Lingo<span>Beats</span></div>
+        <span class="brand-badge">PRO MAX</span>
+      </div>
+
+      <!-- Buscador y Selector de Canciones -->
+      <div class="song-selector-container">
+        <div class="search-input-wrapper">
+          <span class="search-icon" aria-hidden="true">🔍</span>
+          <input
+            type="text"
+            id="song-search-input"
+            class="song-search-input"
+            placeholder="Buscar canción (ej. Yesterday, Fly Me To The Moon)..."
+            aria-label="Buscar canción en LRCLIB"
+            autocomplete="off"
+            value="Yesterday - The Beatles"
+          />
+        </div>
+        <span class="difficulty-badge" id="song-difficulty-badge">
+          ⚡ B2 Intermediate
+        </span>
+      </div>
+
+      <!-- Métricas y Estado de Sesión -->
+      <div class="top-meta">
+        <!-- Racha de Práctica -->
+        <div class="streak-pill" id="streak-counter" title="Racha de práctica diaria">
+          🔥 <span>5 días</span>
+        </div>
+
+        <!-- Progreso de la Canción -->
+        <div class="progress-pill" id="stanza-counter" title="Progreso de estrofas">
+          🎵 <span id="stanza-progress-text">Estrofa 1 / 16</span>
+        </div>
+
+        <!-- Selector de Nivel CEFR -->
+        <div class="level-wrapper">
+          <label for="level-select" style="font-size:0.75rem; color:var(--text-muted);">Nivel:</label>
+          <select id="level-select" class="level-select" title="Selecciona tu nivel CEFR">
+            <option value="A1">A1</option>
+            <option value="A2">A2</option>
+            <option value="B1">B1</option>
+            <option value="B2" selected>B2</option>
+            <option value="C1">C1</option>
+            <option value="C2">C2</option>
+          </select>
+        </div>
+
+        <!-- Estado de Conexión WebSocket -->
+        <div class="connection-status" title="Estado de la conexión">
+          <div class="state-dot state-idle" id="state-indicator"></div>
+          <span id="state-label">Listo</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tabs para alternar vistas en pantallas estrechas -->
+    <nav class="view-tabs" aria-label="Selector de Vista">
+      <button class="tab-btn active" id="tab-lyrics-btn" type="button">🎤 Modo Canción</button>
+      <button class="tab-btn" id="tab-tutor-btn" type="button">💬 Tutor IA</button>
+    </nav>
+
+    <!-- ── 2. MAIN WORKSPACE (MODO DUAL INTEGRADO) ───────────── -->
+    <main class="main-workspace">
+
+      <!-- PANEL CENTRAL / IZQUIERDO: MODO KARAOKE DIDÁCTICO (SPOTIFY STYLE) -->
+      <section class="lyrics-stage workspace-pane active" id="lyrics-pane" aria-label="Karaoke Didáctico">
+        <div class="lyrics-header">
+          <div class="track-meta">
+            <h2 class="track-title" id="track-title">Yesterday</h2>
+            <span class="track-artist" id="track-artist">The Beatles</span>
+          </div>
+          <span class="karaoke-badge" id="karaoke-badge">
+            🎙️ Sincronizado 60 FPS
+          </span>
+        </div>
+
+        <!-- Flujo Dinámico de Estrofas (Efecto de Profundidad) -->
+        <div class="stanzas-stream" id="stanzas-stream">
+          <!-- Estrofa Anterior Atenuada -->
+          <div class="stanza-dimmed" id="stanza-prev" title="Clic para ir a estrofa previa">
+            Your love's the sweetest sound<br />
+            Around you, my heart just pounds
+          </div>
+
+          <!-- Estrofa Activa (Centro de Atención y Práctica) -->
+          <div class="stanza-active" id="karaoke-active-display" role="region" aria-live="polite">
+            <div class="stanza-words" id="stanza-words-container">
+              <span class="word-token word-success" data-phonetic="Correcto: /ˈjɛstərdeɪ/">Yesterday,</span>
+              <span class="word-token word-success" data-phonetic="Correcto: /ɔːl/">all</span>
+              <span class="word-token word-success" data-phonetic="Correcto: /maɪ/">my</span>
+              <span class="word-token word-warning" data-phonetic="Fallo: /'trʌblz/ ➔ /'trʌb.əlz/">troubles</span>
+              <span class="word-token word-pending">seemed</span>
+              <span class="word-token word-pending">so</span>
+              <span class="word-token word-pending">far</span>
+              <span class="word-token word-pending">away</span>
+            </div>
+          </div>
+
+          <!-- Estrofa Siguiente Atenuada -->
+          <div class="stanza-dimmed" id="stanza-next" title="Clic para ir a estrofa siguiente">
+            Now it looks as though they're here to stay<br />
+            Oh, I believe in yesterday
+          </div>
+        </div>
+      </section>
+
+      <!-- PANEL DERECHO: TUTOR CONVERSACIONAL (DUOLINGO MAX STYLE) -->
+      <section class="tutor-pane workspace-pane" id="tutor-pane" aria-label="Tutor Conversacional">
+        <div class="pane-header">
+          <div class="tutor-profile">
+            <div class="tutor-avatar" aria-hidden="true">🤖</div>
+            <div class="tutor-info">
+              <h3>LingoTutor Max</h3>
+              <span>Inteligencia Fonética Activa</span>
+            </div>
+          </div>
+          <button id="clear-btn" class="ctrl-btn" type="button" title="Limpiar historial de chat" aria-label="Limpiar chat">
+            🗑️
+          </button>
+        </div>
+
+        <!-- Conversación / Burbujas -->
+        <div id="chat-container" role="log" aria-label="Historial de mensajes con el tutor" aria-live="polite">
+          <div class="bubble-wrapper tutor">
+            <div class="bubble bubble-tutor">
+              👋 ¡Hola! Bienvenido a <strong>LingoBeats</strong>. Selecciona una canción o haz clic en el micrófono para comenzar tu práctica fonética en tiempo real.
+            </div>
+            <span class="bubble-time">Inicio de sesión</span>
+          </div>
+        </div>
+
+        <!-- Tarjeta Emergente de Feedback Fonético & Articulatorio -->
+        <aside id="feedback-panel" class="hidden" role="alert" aria-live="polite"></aside>
+
+        <!-- Métricas Rápidas -->
+        <div id="stats" aria-label="Estadísticas de sesión">
+          <span>Sesiones: 1  |  Turnos: 0  |  Puntaje Medio: 85%</span>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ── 3. DOCK INFERIOR FLOTANTE (DYNAMIC ISLAND CONTROLS) ─── -->
+    <footer class="bottom-dock" role="toolbar" aria-label="Controles de audio y grabación">
+      <!-- Barra de Visualizador y Nivel Milimétrico -->
+      <div class="dock-progress-wrapper" id="dock-progress-wrapper" title="Visualizador de nivel de audio y progreso">
+        <div id="visualizer-bar"></div>
+      </div>
+
+      <div class="dock-content">
+        <!-- Controles del Reproductor Musical (Modo Escucha) -->
+        <div class="player-controls">
+          <button class="ctrl-btn" id="player-prev-btn" type="button" title="Estrofa anterior (⏮️)" aria-label="Estrofa anterior">
+            ⏮
+          </button>
+
+          <button class="ctrl-btn ctrl-btn-play" id="player-play-btn" type="button" title="Reproducir / Pausar estrofa" aria-label="Reproducir pista">
+            ▶
+          </button>
+
+          <button class="ctrl-btn" id="player-next-btn" type="button" title="Estrofa siguiente (⏭️)" aria-label="Estrofa siguiente">
+            ⏭
+          </button>
+
+          <button class="speed-badge" id="player-speed-btn" type="button" title="Velocidad de reproducción">
+            1.0x
+          </button>
+        </div>
+
+        <!-- Disparador Central de Micrófono con Ondas Concéntricas -->
+        <div class="record-trigger-wrapper">
+          <button
+            id="record-btn"
+            type="button"
+            title="Presiona para grabar tu pronunciación"
+            aria-pressed="false"
+            aria-label="Grabar audio del micrófono"
+          >
+            🎙️
+          </button>
+          <div class="concentric-rings" aria-hidden="true">
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <!-- Interacción por Texto y Preguntas de Comprensión -->
+        <div class="text-interaction-bar">
+          <textarea
+            id="text-input"
+            placeholder="Responde al tutor o practica por texto…"
+            rows="1"
+            aria-label="Escribe tu mensaje o respuesta"
+            autocomplete="off"
+          ></textarea>
+
+          <button id="send-btn" type="button" aria-label="Enviar mensaje">
+            Enviar ↑
+          </button>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ── 4. SCRIPTS Y COMPONENTES FRONTEND ───────────────────── -->
+  <script src="/js/audio/player.js"></script>
+  <script src="/js/audio/recorder.js"></script>
+  <script src="/audio.js"></script>
+  <script src="/ui.js"></script>
+  <script src="/app.js"></script>
+
+  <!-- Auto-ajuste de altura de textarea y tabs interactivos -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // Auto-resize de entrada de texto
+      const textInput = document.getElementById("text-input");
+      if (textInput) {
+        textInput.addEventListener("input", function () {
+          this.style.height = "auto";
+          this.style.height = Math.min(this.scrollHeight, 90) + "px";
+        });
+      }
+
+      // Switcher de tabs para móviles y pantallas reducidas
+      const tabLyrics = document.getElementById("tab-lyrics-btn");
+      const tabTutor  = document.getElementById("tab-tutor-btn");
+      const paneLyrics = document.getElementById("lyrics-pane");
+      const paneTutor  = document.getElementById("tutor-pane");
+
+      if (tabLyrics && tabTutor && paneLyrics && paneTutor) {
+        tabLyrics.addEventListener("click", () => {
+          tabLyrics.classList.add("active");
+          tabTutor.classList.remove("active");
+          paneLyrics.classList.add("active");
+          paneTutor.classList.remove("active");
+        });
+        tabTutor.addEventListener("click", () => {
+          tabTutor.classList.add("active");
+          tabLyrics.classList.remove("active");
+          paneTutor.classList.add("active");
+          paneLyrics.classList.remove("active");
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>

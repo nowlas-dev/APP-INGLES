@@ -1,0 +1,26 @@
+{
+  "user_id": "usr_001",
+  "target_language": "en-US",
+  "current_level": "B2",
+  "persona": "friendly_peer",
+  "stats": {
+    "diagnostic_score": "7/10",
+    "sessions_completed": 1,
+    "total_turns": 8
+  },
+  "persistent_weaknesses": [
+    "Subject-verb agreement (3rd person singular)",
+    "Second conditional (if + past simple vs would)",
+    "Preposition collocations (depend on, think about/of)"
+  ],
+  "vocabulary_bank": [
+    {
+      "word": "tone down",
+      "mastery": 0.8
+    },
+    {
+      "word": "buffer",
+      "mastery": 0.9
+    }
+  ]
+}
