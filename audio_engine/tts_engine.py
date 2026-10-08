@@ -215,9 +215,17 @@ def preprocess_bilingual_text(text: str) -> str:
 #  API Pública de Síntesis
 # ─────────────────────────────────────────────────────────────
 
-async def synthesize_speech(text: str, voice_key: str = "dalia") -> bytes:
+async def synthesize_speech(
+    text: str,
+    voice_key: str = "dalia",
+    attitude: Optional[str] = None,
+) -> bytes:
     """
     Sintetiza texto directamente en memoria usando edge-tts con voces neuronales humanas de alta fidelidad.
+    Aplica modulación prosódica en base a la actitud del tutor:
+      - friendly: ritmo más pausado (rate="-4%")
+      - funny: ritmo natural con pausas expresivas (rate="+0%")
+      - strict: tono firme y conciso (rate="-2%", pitch="-1Hz")
     Retorna bytes de audio en formato MP3 limpio (sin guardarlo en disco).
     """
     if not text or not text.strip():
@@ -237,6 +245,17 @@ async def synthesize_speech(text: str, voice_key: str = "dalia") -> bytes:
         voice_id = VOICE_ALIASES.get(key, voice_key or "es-MX-DaliaNeural")
         rate = "-2%"
         pitch = "+0Hz"
+
+    # Modulación prosódica en base a actitud
+    if attitude:
+        att = attitude.lower().strip()
+        if att == "friendly":
+            rate = "-4%"
+        elif att == "funny":
+            rate = "+0%"
+        elif att == "strict":
+            rate = "-2%"
+            pitch = "-1Hz"
 
     # Normalización del texto con soporte de code-switching y micropausas
     processed_text = preprocess_bilingual_text(text)
@@ -284,10 +303,11 @@ async def synthesize(
     rate: Optional[str] = None,
     pitch: Optional[str] = None,
     voice_id: Optional[str] = None,
+    attitude: Optional[str] = None,
 ) -> bytes:
     """Mapeo retrocompatible hacia synthesize_speech."""
     key = voice_id or (voice if voice in VOICES else "dalia")
-    return await synthesize_speech(text, voice_key=key)
+    return await synthesize_speech(text, voice_key=key, attitude=attitude)
 
 
 # ─────────────────────────────────────────────────────────────

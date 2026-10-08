@@ -61,7 +61,7 @@ except ImportError:
                     os.environ.setdefault(k.strip(), v.strip().strip("'\""))
 
 from audio_engine import whisper_stt, ollama_client, gemini_client, tts_engine
-from audio_engine.services.tutor_agent import TutorAgent
+from audio_engine.services.tutor_agent import TutorAgent, get_welcome_greeting
 from audio_engine.services.scorer import PhoneticScorer
 from audio_engine.services.downloader import AudioDownloader
 from audio_engine.services.audio_separator import StemSeparator
@@ -473,6 +473,33 @@ async def tts_preview(
         preview_text,
         voice_key=chosen_voice,
     )
+    return Response(content=audio_bytes, media_type="audio/mpeg")
+
+
+@app.get("/api/ai/session/welcome")
+async def session_welcome(
+    song: str = "Yesterday",
+    artist: str = "",
+    attitude: str = "funny",
+    voice: str = "dalia",
+):
+    """
+    Endpoint de bienvenida contextual:
+    1. Genera el texto personalizado con get_welcome_greeting.
+    2. Sintetiza a MP3 con synthesize_speech aplicando modulación prosódica según la actitud.
+    3. Retorna directamente el audio streaming como audio/mpeg.
+    """
+    greeting_text = get_welcome_greeting(song_title=song, artist=artist, attitude=attitude)
+    audio_bytes = await tts_engine.synthesize_speech(
+        text=greeting_text,
+        voice_key=voice,
+        attitude=attitude,
+    )
+    if not audio_bytes:
+        raise HTTPException(
+            status_code=500,
+            detail="No se recibieron bytes de audio para el saludo de bienvenida.",
+        )
     return Response(content=audio_bytes, media_type="audio/mpeg")
 
 

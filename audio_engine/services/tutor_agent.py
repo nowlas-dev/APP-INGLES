@@ -6,9 +6,51 @@ Blindaje de parseo JSON y estructuración de respuestas pedagógicas del LLM.
 from __future__ import annotations
 
 import json
+import random
 import re
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
+
+
+# ─────────────────────────────────────────────────────────────
+#  Catálogo de Bienvenida Dinámico por Actitud/Estilo
+# ─────────────────────────────────────────────────────────────
+
+WELCOME_TEMPLATES: Dict[str, List[str]] = {
+    "friendly": [
+        "¡Hola! Qué gran elección practicar con '{song_title}' de {artist}. Vamos a disfrutar cada estrofa y afinar tu pronunciación paso a paso.",
+        "¡Bienvenido a LingoBeats! Hoy cantaremos '{song_title}' de {artist}. Relájate, escucha el ritmo y diviértete aprendiendo inglés.",
+        "¡Qué alegría tenerte aquí! '{song_title}' de {artist} es fantástica para mejorar tu fluidez y vocabulario. ¡Comencemos con toda la energía!",
+    ],
+    "funny": [
+        "¡Vaya, vaya! Prepárate para cantar '{song_title}' de {artist} como en la ducha, pero aquí tu tutor IA te escucha atentamente. ¡A darlo todo!",
+        "¡Atención! Prohibido desafinar en '{song_title}' de {artist}... Bueno, un poquito sí, pero los fonemas en inglés me los pronuncias perfecto, ¿trato?",
+        "¡Llegó el momento estelar! Con '{song_title}' de {artist} vas a sonar mejor que el mismísimo artista original. ¡A cantar sin miedo!",
+    ],
+    "strict": [
+        "Iniciando sesión de entrenamiento con '{song_title}' de {artist}. Exijo máxima atención a las consonantes y el ritmo. Concentración total.",
+        "Objetivo fijado: dominar la dicción en '{song_title}' de {artist}. Cada error fonético será corregido. Pronuncia con claridad desde el primer verso.",
+        "Sesión de disciplina fonética con '{song_title}' de {artist}. Cero murmullos: modula bien cada palabra y mantén la precisión vocal.",
+    ],
+}
+
+
+def get_welcome_greeting(song_title: str, artist: str = "", attitude: str = "funny") -> str:
+    """
+    Elige una plantilla aleatoria para el estilo especificado y devuelve el saludo personalizado.
+    Estilos disponibles: friendly, funny, strict (fallback: funny).
+    """
+    att = (attitude or "funny").lower().strip()
+    if att not in WELCOME_TEMPLATES:
+        att = "funny"
+
+    title = (song_title or "esta canción").strip()
+    art = (artist or "").strip()
+    artist_display = art if art else "tu artista favorito"
+
+    templates = WELCOME_TEMPLATES[att]
+    template = random.choice(templates)
+    return template.format(song_title=title, artist=artist_display)
 
 
 class TutorOutputSchema(BaseModel):

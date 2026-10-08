@@ -146,6 +146,25 @@ app.get(["/api/ai/tts/preview", "/api/tts/preview"], async (req, res) => {
   }
 });
 
+// Saludo contextual de bienvenida con personalidad
+app.get("/api/ai/session/welcome", async (req, res) => {
+  const { song, artist, attitude, voice } = req.query;
+  try {
+    const r = await axios.get(`${AUDIO_ENGINE_URL}/api/ai/session/welcome`, {
+      params: { song, artist, attitude, voice },
+      responseType: "arraybuffer",
+      timeout: 20000,
+    });
+    res.set("Content-Type", "audio/mpeg");
+    if (r.headers["x-greeting-text"]) {
+      res.set("X-Greeting-Text", r.headers["x-greeting-text"]);
+    }
+    res.send(r.data);
+  } catch (err) {
+    res.status(err.response?.status || 500).json({ error: "Error en saludo contextual de bienvenida", detail: err.message });
+  }
+});
+
 app.get("/api/health", async (req, res) => {
   let engineStatus = { status: "unreachable" };
   try {

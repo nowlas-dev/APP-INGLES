@@ -19,6 +19,7 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 ## [v2.1.0] - 2026-10-08
 
 ### Added
+- **Saludo Contextual de Bienvenida con Personalidad:** Endpoint `GET /api/ai/session/welcome` que genera saludos personalizados según canción y artista con catálogo dinámico de 3 actitudes (`friendly`, `funny`, `strict`) y modulación prosódica en tiempo real en `edge-tts`.
 - **Síntesis Neuronal en Generación Textual:** Síntesis en memoria en `/generate` retornando `audio_b64` a 24kHz/48kHz estéreo para eliminar cualquier caída en modo solo-texto.
 - **Reproducción Web Audio API Pura:** Implementación de `AudioModule.playAudioUrl()` utilizando `AudioContext.decodeAudioData()` y control estricto de buffers activos.
 - **Suite de Pruebas Automatizadas de Voz:** Scripts `tests/test_tts_voices.py` y `tests/test_fastapi_endpoints.py` validando los endpoints y las 5 personalidades de voz.
