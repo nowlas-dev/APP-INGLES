@@ -19,6 +19,8 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 ## [v2.1.0] - 2026-10-08
 
 ### Added
+- **Proxy Gateway de Streaming de Bienvenida en Node.js:** Endpoint `GET /api/session/welcome` en `backend-core` y `orchestrator` con proxy HTTP streaming binario (`audio/mpeg`) hacia FastAPI y fallback de contingencia.
+- **Expansión de Máquina de Estados de Sesión:** Nuevos estados `INTRO_GREETING` y `PLAYING_STANZA` en `sessionStore.js` con persistencia dinámica de `attitude` y `voice` para el flujo conversacional.
 - **Saludo Contextual de Bienvenida con Personalidad:** Endpoint `GET /api/ai/session/welcome` que genera saludos personalizados según canción y artista con catálogo dinámico de 3 actitudes (`friendly`, `funny`, `strict`) y modulación prosódica en tiempo real en `edge-tts`.
 - **Síntesis Neuronal en Generación Textual:** Síntesis en memoria en `/generate` retornando `audio_b64` a 24kHz/48kHz estéreo para eliminar cualquier caída en modo solo-texto.
 - **Reproducción Web Audio API Pura:** Implementación de `AudioModule.playAudioUrl()` utilizando `AudioContext.decodeAudioData()` y control estricto de buffers activos.

@@ -23,25 +23,29 @@ const sessions = new Map();
 //  Estados válidos
 // ─────────────────────────────────────────────────────────────
 const STATES = Object.freeze({
-  IDLE:          "IDLE",
-  LISTENING:     "LISTENING",
-  RECORDING:     "RECORDING",
-  PROCESSING:    "PROCESSING",
-  SPEAKING:      "SPEAKING",
-  FEEDBACK:      "FEEDBACK",
-  COMPREHENSION: "COMPREHENSION",
-  ERROR:         "ERROR",
+  IDLE:           "IDLE",
+  INTRO_GREETING: "INTRO_GREETING",
+  PLAYING_STANZA: "PLAYING_STANZA",
+  LISTENING:      "LISTENING",
+  RECORDING:      "RECORDING",
+  PROCESSING:     "PROCESSING",
+  SPEAKING:       "SPEAKING",
+  FEEDBACK:       "FEEDBACK",
+  COMPREHENSION:  "COMPREHENSION",
+  ERROR:          "ERROR",
 });
 
 const VALID_TRANSITIONS = {
-  [STATES.IDLE]:          [STATES.RECORDING, STATES.LISTENING, STATES.PROCESSING],
-  [STATES.LISTENING]:     [STATES.RECORDING, STATES.PROCESSING, STATES.IDLE],
-  [STATES.RECORDING]:     [STATES.PROCESSING, STATES.IDLE],
-  [STATES.PROCESSING]:    [STATES.FEEDBACK, STATES.COMPREHENSION, STATES.SPEAKING, STATES.IDLE, STATES.ERROR],
-  [STATES.SPEAKING]:      [STATES.IDLE, STATES.FEEDBACK, STATES.COMPREHENSION],
-  [STATES.FEEDBACK]:      [STATES.IDLE, STATES.COMPREHENSION, STATES.PROCESSING],
-  [STATES.COMPREHENSION]: [STATES.IDLE, STATES.PROCESSING, STATES.RECORDING],
-  [STATES.ERROR]:         [STATES.IDLE],
+  [STATES.IDLE]:           [STATES.INTRO_GREETING, STATES.PLAYING_STANZA, STATES.RECORDING, STATES.LISTENING, STATES.PROCESSING],
+  [STATES.INTRO_GREETING]: [STATES.PLAYING_STANZA, STATES.IDLE, STATES.ERROR],
+  [STATES.PLAYING_STANZA]: [STATES.IDLE, STATES.RECORDING, STATES.LISTENING, STATES.PROCESSING, STATES.INTRO_GREETING],
+  [STATES.LISTENING]:      [STATES.RECORDING, STATES.PROCESSING, STATES.IDLE],
+  [STATES.RECORDING]:      [STATES.PROCESSING, STATES.IDLE],
+  [STATES.PROCESSING]:     [STATES.FEEDBACK, STATES.COMPREHENSION, STATES.SPEAKING, STATES.IDLE, STATES.ERROR],
+  [STATES.SPEAKING]:       [STATES.IDLE, STATES.FEEDBACK, STATES.COMPREHENSION, STATES.PLAYING_STANZA],
+  [STATES.FEEDBACK]:       [STATES.IDLE, STATES.COMPREHENSION, STATES.PROCESSING],
+  [STATES.COMPREHENSION]:  [STATES.IDLE, STATES.PROCESSING, STATES.RECORDING],
+  [STATES.ERROR]:          [STATES.IDLE],
 };
 
 
@@ -57,21 +61,28 @@ const VALID_TRANSITIONS = {
  * @param {string} opts.userId
  * @param {string} opts.cefrLevel
  * @param {import('ws').WebSocket} opts.ws
+ * @param {string} [opts.voiceId]
+ * @param {string} [opts.voice]
+ * @param {string} [opts.attitude]
  */
-function create(clientId, { sessionId, userId, cefrLevel, ws, voiceId = "dalia" }) {
+function create(clientId, { sessionId, userId, cefrLevel, ws, voiceId = "dalia", voice = "dalia", attitude = "funny" }) {
+  const chosenVoice = (voice || voiceId || "dalia").toLowerCase().trim();
+  const chosenAttitude = (attitude || "funny").toLowerCase().trim();
   sessions.set(clientId, {
     clientId,
     sessionId,
     userId,
     cefrLevel,
-    voiceId,
+    voiceId: chosenVoice,
+    voice: chosenVoice,
+    attitude: chosenAttitude,
     turnSeq: 0,
     state: STATES.IDLE,
     audioChunks: [], // Almacén binario en memoria para evitar sobrecarga Base64
     ws,
     createdAt: new Date(),
   });
-  console.log(`[SESSION] ✅ Creada: ${clientId} | DB session=${sessionId} | lvl=${cefrLevel} | voice=${voiceId}`);
+  console.log(`[SESSION] ✅ Creada: ${clientId} | DB session=${sessionId} | lvl=${cefrLevel} | voice=${chosenVoice} | attitude=${chosenAttitude}`);
 }
 
 /**
@@ -166,8 +177,22 @@ function updateLevel(clientId, cefrLevel) {
 function updateVoice(clientId, voiceId) {
   const session = sessions.get(clientId);
   if (session && voiceId) {
-    session.voiceId = voiceId.toLowerCase().trim();
-    console.log(`[SESSION] 🎙️ ${clientId}: tutor voice = ${session.voiceId}`);
+    const v = voiceId.toLowerCase().trim();
+    session.voiceId = v;
+    session.voice = v;
+    console.log(`[SESSION] 🎙️ ${clientId}: tutor voice = ${v}`);
+  }
+}
+
+/**
+ * Actualiza la actitud pedagógica del tutor en la sesión en memoria.
+ */
+function updateAttitude(clientId, attitude) {
+  const session = sessions.get(clientId);
+  if (session && attitude) {
+    const a = attitude.toLowerCase().trim();
+    session.attitude = a;
+    console.log(`[SESSION] 🎭 ${clientId}: tutor attitude = ${a}`);
   }
 }
 
@@ -193,5 +218,6 @@ module.exports = {
   nextTurn,
   updateLevel,
   updateVoice,
+  updateAttitude,
   safeSend,
 };

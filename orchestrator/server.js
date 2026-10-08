@@ -210,7 +210,7 @@ wss.on("connection", (ws) => {
   const userId  = "usr_001";
 
   // Registro inmediato de sesión en memoria
-  sessionStore.create(clientId, { sessionId, userId, cefrLevel, ws, voiceId: "dalia" });
+  sessionStore.create(clientId, { sessionId, userId, cefrLevel, ws, voiceId: "dalia", attitude: "funny" });
 
   // Inicialización asíncrona de backend
   (async () => {
@@ -238,12 +238,15 @@ wss.on("connection", (ws) => {
     } catch {}
 
     const curVoice = sessionStore.get(clientId)?.voiceId || "dalia";
+    const curAttitude = sessionStore.get(clientId)?.attitude || "funny";
     sessionStore.safeSend(ws, {
       type: "connected",
       clientId,
       sessionId,
       profile,
       voice_id: curVoice,
+      voice: curVoice,
+      attitude: curAttitude,
       state:   sessionStore.STATES.IDLE,
       message: "Conectado a LingoBeats / LingoVibe Orchestrator",
     });
@@ -273,6 +276,7 @@ wss.on("connection", (ws) => {
         form.append("synthesize_audio", "true");
         form.append("voice_id", session.voiceId || "dalia");
         form.append("voice", session.voiceId || "dalia");
+        form.append("attitude", session.attitude || "funny");
 
         const r = await axios.post(`${AUDIO_ENGINE_URL}/ingest`, form, {
           headers: form.getHeaders(),
@@ -349,6 +353,9 @@ wss.on("connection", (ws) => {
       try {
         const chosenVoice = (data.voice || data.voice_id || session.voiceId || "dalia").toLowerCase().trim();
         session.voiceId = chosenVoice;
+        session.voice = chosenVoice;
+        if (data.attitude) session.attitude = data.attitude.toLowerCase().trim();
+        const chosenAttitude = session.attitude || "funny";
 
         const r = await axios.post(`${AUDIO_ENGINE_URL}/generate`, {
           user_message: text,
@@ -358,6 +365,7 @@ wss.on("connection", (ws) => {
           cefr_level:   session.cefrLevel,
           voice:        chosenVoice,
           voice_id:     chosenVoice,
+          attitude:     chosenAttitude,
           synthesize_audio: true,
         }, { timeout: 60000 });
 
@@ -388,12 +396,24 @@ wss.on("connection", (ws) => {
     if (type === "set_voice") {
       const voiceId = (data.voice_id || data.voice || "dalia").toLowerCase().trim();
       sessionStore.updateVoice(clientId, voiceId);
+      if (data.attitude) sessionStore.updateAttitude(clientId, data.attitude);
       sessionStore.safeSend(ws, { type: "voice_updated", voice_id: voiceId, voice: voiceId });
+      return;
+    }
+
+    if (type === "set_attitude") {
+      const attitude = (data.attitude || "funny").toLowerCase().trim();
+      sessionStore.updateAttitude(clientId, attitude);
+      sessionStore.safeSend(ws, { type: "attitude_updated", attitude });
       return;
     }
 
     if (data.voice_id || data.voice) {
       sessionStore.updateVoice(clientId, (data.voice_id || data.voice).toLowerCase().trim());
+    }
+
+    if (data.attitude) {
+      sessionStore.updateAttitude(clientId, data.attitude);
     }
 
     // Audio legado en base64
@@ -416,6 +436,7 @@ wss.on("connection", (ws) => {
         form.append("synthesize_audio", "true");
         form.append("voice_id", session.voiceId || "dalia");
         form.append("voice", session.voiceId || "dalia");
+        form.append("attitude", session.attitude || "funny");
 
         const r = await axios.post(`${AUDIO_ENGINE_URL}/ingest`, form, {
           headers: form.getHeaders(),
