@@ -392,6 +392,9 @@ class GenerateRequest(BaseModel):
     cefr_level: Optional[str] = None
     audio_b64: Optional[str] = None
     mime_type: str = "audio/webm"
+    voice: Optional[str] = None
+    voice_id: Optional[str] = "dalia"
+    synthesize_audio: bool = True
 
 
 @app.post("/generate")
@@ -415,12 +418,25 @@ async def generate(req: GenerateRequest):
         )
         await database.increment_session_turns(req.session_id)
 
+    audio_b64 = None
+    if req.synthesize_audio and parsed.get("conversation"):
+        try:
+            chosen_voice = req.voice or req.voice_id or "dalia"
+            audio_bytes = await tts_engine.synthesize_speech(
+                parsed["conversation"], voice_key=chosen_voice
+            )
+            audio_b64 = base64.b64encode(audio_bytes).decode("ascii")
+        except Exception as exc:
+            logger.warning(f"Error sintetizando audio en /generate: {exc}")
+
     return {
         "raw": raw,
         "conversation": parsed["conversation"],
         "feedback": parsed["feedback"],
         "target_corrections": parsed.get("target_corrections", []),
         "comprehension_question": parsed.get("comprehension_question"),
+        "audio_b64": audio_b64,
+        "audio_mime": "audio/mpeg",
         "llm_provider": provider,
         "latency_ms": int(latency * 1000),
     }
@@ -436,19 +452,26 @@ class SynthesizeRequest(BaseModel):
 
 @app.post("/synthesize")
 async def synthesize(req: SynthesizeRequest):
-    audio_bytes = await tts_engine.synthesize(
-        req.text, req.target_lang, req.voice, req.rate, voice_id=req.voice_id
+    chosen_voice = req.voice or req.voice_id or "dalia"
+    audio_bytes = await tts_engine.synthesize_speech(
+        req.text, voice_key=chosen_voice
     )
     return Response(content=audio_bytes, media_type="audio/mpeg")
 
 
 @app.get("/api/ai/tts/preview")
-async def tts_preview(voice_id: str = "dalia"):
+@app.get("/api/tts/preview")
+async def tts_preview(
+    voice: Optional[str] = None,
+    voice_id: Optional[str] = None,
+    text: Optional[str] = None,
+):
     """Previsualización de audio de 2s para el selector interactivo de tutores."""
-    preview_text = "¡Hola! Seré tu guía en esta canción."
-    audio_bytes = await tts_engine.synthesize(
+    chosen_voice = voice or voice_id or "dalia"
+    preview_text = text or "Hola, seré tu tutor de inglés en esta canción"
+    audio_bytes = await tts_engine.synthesize_speech(
         preview_text,
-        voice_id=voice_id,
+        voice_key=chosen_voice,
     )
     return Response(content=audio_bytes, media_type="audio/mpeg")
 
@@ -464,6 +487,7 @@ async def ingest(
     target_lang: str = Form(default="en-US"),
     language: Optional[str] = Form(default=None),
     synthesize_audio: bool = Form(default=True),
+    voice: Optional[str] = Form(default=None),
     voice_id: Optional[str] = Form(default="dalia"),
 ):
     """
@@ -528,7 +552,8 @@ async def ingest(
     audio_b64 = None
     if synthesize_audio and parsed["conversation"]:
         try:
-            tts_bytes = await tts_engine.synthesize(parsed["conversation"], target_lang=target_lang, voice_id=voice_id)
+            chosen_voice = voice or voice_id or "dalia"
+            tts_bytes = await tts_engine.synthesize_speech(parsed["conversation"], voice_key=chosen_voice)
             audio_b64 = base64.b64encode(tts_bytes).decode("ascii")
         except Exception as exc:
             logger.warning(f"Fallo en síntesis TTS (no crítico): {exc}")

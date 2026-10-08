@@ -58,7 +58,7 @@ const UIModule = (() => {
     playerPlayBtn        = document.getElementById("player-play-btn");
     playerSpeedBtn       = document.getElementById("player-speed-btn");
 
-    voiceDropdownEl      = document.getElementById("voice-selector-dropdown");
+    voiceDropdownEl      = document.getElementById("tutor-voice-select") || document.getElementById("voice-selector-dropdown");
     tutorChipNameEl      = document.getElementById("tutor-chip-name");
     tutorRegionBadgeEl   = document.getElementById("tutor-region-badge");
     voicePreviewBtn      = document.getElementById("voice-preview-btn");
@@ -394,13 +394,13 @@ const UIModule = (() => {
   }
 
   function _speakWord(word) {
-    if (!("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel();
-    const clean = word.replace(/[^a-z0-9']/gi, "");
-    const utter = new SpeechSynthesisUtterance(clean);
-    utter.lang = "en-US";
-    utter.rate = 0.85;
-    window.speechSynthesis.speak(utter);
+    const clean = (word || "").replace(/[^a-z0-9']/gi, "").trim();
+    if (!clean) return;
+    const voice = (voiceDropdownEl?.value || "dalia");
+    const previewUrl = `/api/ai/tts/preview?voice=${encodeURIComponent(voice)}&text=${encodeURIComponent(clean)}`;
+    AudioModule.playAudioUrl(previewUrl).catch((err) => {
+      console.warn("[TTS] Error reproduciendo palabra:", err);
+    });
   }
 
   function setSelectedVoice(voiceId) {

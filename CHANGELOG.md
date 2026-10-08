@@ -16,6 +16,20 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [v2.1.0] - 2026-10-08
+
+### Added
+- **Síntesis Neuronal en Generación Textual:** Síntesis en memoria en `/generate` retornando `audio_b64` a 24kHz/48kHz estéreo para eliminar cualquier caída en modo solo-texto.
+- **Reproducción Web Audio API Pura:** Implementación de `AudioModule.playAudioUrl()` utilizando `AudioContext.decodeAudioData()` y control estricto de buffers activos.
+- **Suite de Pruebas Automatizadas de Voz:** Scripts `tests/test_tts_voices.py` y `tests/test_fastapi_endpoints.py` validando los endpoints y las 5 personalidades de voz.
+
+### Changed
+- **Eradicación Total de Web Speech API:** Eliminación completa de llamadas a `window.speechSynthesis` y `SpeechSynthesisUtterance` en el frontend (`app.js`, `ui.js`), sustituidas por streaming neural vía backend.
+- **Normalización de Voces en edge-tts:** Corregida asignación de `elena` a `es-ES-ElviraNeural` (con soporte transparente de alias) para prevenir fallos y rechazos de parámetros en Microsoft Edge TTS.
+- **Persistencia y Selección de Voz:** Unificación de claves de almacenamiento `selected_tutor_voice` con retrocompatibilidad hacia `lingobeats_tutor_voice`.
+
+---
+
 ## [v2.0.0] - 2026-10-07
 
 ### Added

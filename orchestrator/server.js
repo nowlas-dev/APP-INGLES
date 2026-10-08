@@ -131,10 +131,11 @@ app.post("/api/download", async (req, res) => {
 
 // Previsualización de voz de tutor interactivo
 app.get(["/api/ai/tts/preview", "/api/tts/preview"], async (req, res) => {
-  const { voice_id = "dalia" } = req.query;
+  const { voice_id, voice, text } = req.query;
+  const chosenVoice = (voice || voice_id || "dalia").toLowerCase().trim();
   try {
     const r = await axios.get(`${AUDIO_ENGINE_URL}/api/ai/tts/preview`, {
-      params: { voice_id },
+      params: { voice: chosenVoice, voice_id: chosenVoice, text },
       responseType: "arraybuffer",
       timeout: 15000,
     });
@@ -252,6 +253,7 @@ wss.on("connection", (ws) => {
         form.append("target_lang", "en-US");
         form.append("synthesize_audio", "true");
         form.append("voice_id", session.voiceId || "dalia");
+        form.append("voice", session.voiceId || "dalia");
 
         const r = await axios.post(`${AUDIO_ENGINE_URL}/ingest`, form, {
           headers: form.getHeaders(),
@@ -326,12 +328,18 @@ wss.on("connection", (ws) => {
       const turnSeq = sessionStore.nextTurn(clientId);
 
       try {
+        const chosenVoice = (data.voice || data.voice_id || session.voiceId || "dalia").toLowerCase().trim();
+        session.voiceId = chosenVoice;
+
         const r = await axios.post(`${AUDIO_ENGINE_URL}/generate`, {
           user_message: text,
           session_id:   session.sessionId,
           turn_seq:     turnSeq,
           user_key:     session.userId,
           cefr_level:   session.cefrLevel,
+          voice:        chosenVoice,
+          voice_id:     chosenVoice,
+          synthesize_audio: true,
         }, { timeout: 60000 });
 
         sessionStore.transition(clientId, sessionStore.STATES.SPEAKING);
@@ -341,6 +349,8 @@ wss.on("connection", (ws) => {
           conversation: r.data.conversation,
           feedback: r.data.feedback,
           target_corrections: r.data.target_corrections,
+          audio_b64: r.data.audio_b64,
+          audio_mime: r.data.audio_mime || "audio/mpeg",
           llm_provider: r.data.llm_provider,
           latency_ms: r.data.latency_ms,
           turn_seq: turnSeq,
@@ -359,12 +369,12 @@ wss.on("connection", (ws) => {
     if (type === "set_voice") {
       const voiceId = (data.voice_id || data.voice || "dalia").toLowerCase().trim();
       sessionStore.updateVoice(clientId, voiceId);
-      sessionStore.safeSend(ws, { type: "voice_updated", voice_id: voiceId });
+      sessionStore.safeSend(ws, { type: "voice_updated", voice_id: voiceId, voice: voiceId });
       return;
     }
 
-    if (data.voice_id) {
-      sessionStore.updateVoice(clientId, data.voice_id);
+    if (data.voice_id || data.voice) {
+      sessionStore.updateVoice(clientId, (data.voice_id || data.voice).toLowerCase().trim());
     }
 
     // Audio legado en base64
@@ -386,6 +396,7 @@ wss.on("connection", (ws) => {
         form.append("target_lang", target_lang);
         form.append("synthesize_audio", "true");
         form.append("voice_id", session.voiceId || "dalia");
+        form.append("voice", session.voiceId || "dalia");
 
         const r = await axios.post(`${AUDIO_ENGINE_URL}/ingest`, form, {
           headers: form.getHeaders(),

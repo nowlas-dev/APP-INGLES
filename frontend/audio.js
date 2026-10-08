@@ -10,6 +10,7 @@ const AudioModule = (() => {
   let recorder = null;
   let player = null;
   let audioContext = null;
+  let activeSourceNode = null;
 
   function _getAudioContext() {
     if (!audioContext || audioContext.state === "closed") {
@@ -17,6 +18,16 @@ const AudioModule = (() => {
       audioContext = new AudioCtx();
     }
     return audioContext;
+  }
+
+  function stopPlayback() {
+    if (activeSourceNode) {
+      try {
+        activeSourceNode.stop();
+        activeSourceNode.disconnect();
+      } catch (e) {}
+      activeSourceNode = null;
+    }
   }
 
   async function init() {
@@ -34,6 +45,7 @@ const AudioModule = (() => {
    * o un Blob para retrocompatibilidad.
    */
   function startRecording(onBinaryChunk, onLevel) {
+    stopPlayback();
     if (!recorder) {
       recorder = new AudioRecorder();
     }
@@ -51,10 +63,44 @@ const AudioModule = (() => {
   }
 
   /**
-   * Reproduce audio desde Base64 de forma eficiente (sin Array.from excesivo).
+   * Reproduce audio desde una URL decodificando con Web Audio API (decodeAudioData).
+   */
+  async function playAudioUrl(url) {
+    if (!url) return;
+    stopPlayback();
+    const ctx = _getAudioContext();
+    if (ctx.state === "suspended") {
+      await ctx.resume();
+    }
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Error al descargar audio (${response.status})`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const decodedBuffer = await ctx.decodeAudioData(arrayBuffer);
+    const sourceNode = ctx.createBufferSource();
+    sourceNode.buffer = decodedBuffer;
+    sourceNode.connect(ctx.destination);
+    activeSourceNode = sourceNode;
+    sourceNode.start();
+
+    return new Promise((resolve) => {
+      sourceNode.onended = () => {
+        if (activeSourceNode === sourceNode) {
+          activeSourceNode = null;
+        }
+        resolve();
+      };
+    });
+  }
+
+  /**
+   * Reproduce audio desde Base64 de forma eficiente con AudioContext.
    */
   async function playAudioB64(audioB64, mimeType = "audio/mpeg") {
     if (!audioB64) return;
+    stopPlayback();
     const ctx = _getAudioContext();
     if (ctx.state === "suspended") {
       await ctx.resume();
@@ -72,10 +118,16 @@ const AudioModule = (() => {
     const sourceNode = ctx.createBufferSource();
     sourceNode.buffer = decodedBuffer;
     sourceNode.connect(ctx.destination);
+    activeSourceNode = sourceNode;
     sourceNode.start();
 
     return new Promise((resolve) => {
-      sourceNode.onended = resolve;
+      sourceNode.onended = () => {
+        if (activeSourceNode === sourceNode) {
+          activeSourceNode = null;
+        }
+        resolve();
+      };
     });
   }
 
@@ -84,6 +136,7 @@ const AudioModule = (() => {
    */
   async function playAudioBinary(arrayBuffer) {
     if (!arrayBuffer) return;
+    stopPlayback();
     const ctx = _getAudioContext();
     if (ctx.state === "suspended") {
       await ctx.resume();
@@ -92,10 +145,16 @@ const AudioModule = (() => {
     const sourceNode = ctx.createBufferSource();
     sourceNode.buffer = decodedBuffer;
     sourceNode.connect(ctx.destination);
+    activeSourceNode = sourceNode;
     sourceNode.start();
 
     return new Promise((resolve) => {
-      sourceNode.onended = resolve;
+      sourceNode.onended = () => {
+        if (activeSourceNode === sourceNode) {
+          activeSourceNode = null;
+        }
+        resolve();
+      };
     });
   }
 
@@ -110,6 +169,7 @@ const AudioModule = (() => {
   }
 
   function destroy() {
+    stopPlayback();
     if (recorder) {
       recorder.destroy();
       recorder = null;
@@ -129,8 +189,10 @@ const AudioModule = (() => {
     startRecording,
     stopRecording,
     isRecording,
+    playAudioUrl,
     playAudioB64,
     playAudioBinary,
+    stopPlayback,
     getPlayer,
     destroy,
   };

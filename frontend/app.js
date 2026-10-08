@@ -16,8 +16,9 @@ const AppModule = (() => {
   let reconnecting = false;
 
   // Estado de la voz del tutor
-  const STORAGE_KEY_VOICE = "lingobeats_tutor_voice";
-  let currentVoiceId      = localStorage.getItem(STORAGE_KEY_VOICE) || "dalia";
+  const STORAGE_KEY_VOICE = "selected_tutor_voice";
+  const LEGACY_STORAGE_KEY_VOICE = "lingobeats_tutor_voice";
+  let currentVoiceId      = localStorage.getItem(STORAGE_KEY_VOICE) || localStorage.getItem(LEGACY_STORAGE_KEY_VOICE) || "dalia";
   let previewAudioObj     = null;
 
   // Estado de la canción y karaoke sincronizado
@@ -31,7 +32,7 @@ const AppModule = (() => {
   // ── Bootstrap ────────────────────────────────────────────
   async function init() {
     UIModule.init();
-    currentVoiceId = localStorage.getItem(STORAGE_KEY_VOICE) || "dalia";
+    currentVoiceId = localStorage.getItem(STORAGE_KEY_VOICE) || localStorage.getItem(LEGACY_STORAGE_KEY_VOICE) || "dalia";
     UIModule.setSelectedVoice(currentVoiceId);
     _setupEventListeners();
     _connect();
@@ -120,7 +121,7 @@ const AppModule = (() => {
         UIModule.addTutorBubble(msg.conversation || "");
         UIModule.showFeedback(msg.feedback || null, msg.discrepancies || []);
 
-        // Reproducir audio con liberación garantizada
+        // Reproducir audio con decodificación Web Audio API
         if (msg.audio_b64) {
           AudioModule.playAudioB64(msg.audio_b64, msg.audio_mime || "audio/mpeg")
             .then(() => UIModule.setState("IDLE"))
@@ -129,7 +130,14 @@ const AppModule = (() => {
               UIModule.setState("IDLE");
             });
         } else if (msg.conversation) {
-          _speakWebSpeech(msg.conversation);
+          const url = `/api/ai/tts/preview?voice=${encodeURIComponent(currentVoiceId)}&voice_id=${encodeURIComponent(currentVoiceId)}&text=${encodeURIComponent(msg.conversation)}`;
+          AudioModule.playAudioUrl(url)
+            .then(() => UIModule.setState("IDLE"))
+            .catch((err) => {
+              console.warn("[APP] TTS fallback error:", err);
+              UIModule.setState("IDLE");
+            });
+        } else {
           UIModule.setState("IDLE");
         }
 
@@ -216,10 +224,8 @@ const AppModule = (() => {
   }
 
   function _togglePlayStanza() {
-    if (!("speechSynthesis" in window)) return;
-
     if (isSpeakingStanza) {
-      window.speechSynthesis.cancel();
+      AudioModule.stopPlayback();
       isSpeakingStanza = false;
       UIModule.setPlayButtonState(false);
     } else {
@@ -228,30 +234,26 @@ const AppModule = (() => {
   }
 
   function _playCurrentStanzaSpeech() {
-    if (!currentStanzas[currentStanzaIdx]) return;
-    window.speechSynthesis.cancel();
+    if (!currentStanzas || !currentStanzas[currentStanzaIdx]) return;
+    const textToSpeak = (currentStanzas[currentStanzaIdx].text || "").trim();
+    if (!textToSpeak) return;
 
-    const textToSpeak = currentStanzas[currentStanzaIdx].text || "";
-    const utter = new SpeechSynthesisUtterance(textToSpeak);
-    utter.lang  = "en-US";
-    utter.rate  = playbackRate;
-
+    AudioModule.stopPlayback();
     isSpeakingStanza = true;
     UIModule.setPlayButtonState(true);
 
-    utter.onend = () => {
-      isSpeakingStanza = false;
-      UIModule.setPlayButtonState(false);
-      // Sugerir grabar después de escuchar la estrofa
-      UIModule.showToast("🎧 Estrofa completada. ¡Ahora presiona el micrófono para practicar!", "info");
-    };
-
-    utter.onerror = () => {
-      isSpeakingStanza = false;
-      UIModule.setPlayButtonState(false);
-    };
-
-    window.speechSynthesis.speak(utter);
+    const url = `/api/ai/tts/preview?voice=${encodeURIComponent(currentVoiceId)}&voice_id=${encodeURIComponent(currentVoiceId)}&text=${encodeURIComponent(textToSpeak)}`;
+    AudioModule.playAudioUrl(url)
+      .then(() => {
+        isSpeakingStanza = false;
+        UIModule.setPlayButtonState(false);
+        UIModule.showToast("🎧 Estrofa completada. ¡Ahora presiona el micrófono para practicar!", "info");
+      })
+      .catch((err) => {
+        console.warn("[APP] Error al reproducir estrofa con TTS neuronal:", err);
+        isSpeakingStanza = false;
+        UIModule.setPlayButtonState(false);
+      });
   }
 
   function _cycleSpeed() {
@@ -274,7 +276,7 @@ const AppModule = (() => {
       UIModule.showToast("Sin conexión al servidor", "error");
       return;
     }
-    ws.send(JSON.stringify({ type, voice_id: currentVoiceId, ...payload }));
+    ws.send(JSON.stringify({ type, voice_id: currentVoiceId, voice: currentVoiceId, ...payload }));
   }
 
   function _sendBinary(arrayBuffer) {
@@ -341,51 +343,24 @@ const AppModule = (() => {
     if (!newVoiceId) return;
     currentVoiceId = newVoiceId.toLowerCase().trim();
     localStorage.setItem(STORAGE_KEY_VOICE, currentVoiceId);
+    localStorage.setItem(LEGACY_STORAGE_KEY_VOICE, currentVoiceId);
     UIModule.updateTutorChip(currentVoiceId);
-    _sendMessage("set_voice", { voice_id: currentVoiceId });
+    _sendMessage("set_voice", { voice_id: currentVoiceId, voice: currentVoiceId });
     UIModule.showToast(`Tutor: ${currentVoiceId.toUpperCase()} activado`, "info");
   }
 
   async function _playVoicePreview() {
-    if (previewAudioObj) {
-      previewAudioObj.pause();
-      previewAudioObj = null;
-      UIModule.setPreviewPlaying(false);
-      return;
-    }
-
     try {
       UIModule.setPreviewPlaying(true);
-      const url = `/api/ai/tts/preview?voice_id=${encodeURIComponent(currentVoiceId)}&t=${Date.now()}`;
-      previewAudioObj = new Audio(url);
-
-      previewAudioObj.onended = () => {
-        UIModule.setPreviewPlaying(false);
-        previewAudioObj = null;
-      };
-
-      previewAudioObj.onerror = (err) => {
-        console.warn("[APP] Error al reproducir preview de audio:", err);
-        UIModule.setPreviewPlaying(false);
-        previewAudioObj = null;
-        UIModule.showToast("No se pudo reproducir la muestra de voz.", "warning");
-      };
-
-      await previewAudioObj.play();
+      AudioModule.stopPlayback();
+      const url = `/api/ai/tts/preview?voice=${encodeURIComponent(currentVoiceId)}&voice_id=${encodeURIComponent(currentVoiceId)}&t=${Date.now()}`;
+      await AudioModule.playAudioUrl(url);
     } catch (err) {
       console.warn("[APP] Error en reproducción de vista previa:", err);
+      UIModule.showToast("No se pudo reproducir la muestra de voz.", "warning");
+    } finally {
       UIModule.setPreviewPlaying(false);
-      previewAudioObj = null;
     }
-  }
-
-  function _speakWebSpeech(text) {
-    if (!("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang  = "en-US";
-    utter.rate  = playbackRate;
-    window.speechSynthesis.speak(utter);
   }
 
   // ── Event Listeners ──────────────────────────────────────
@@ -406,7 +381,7 @@ const AppModule = (() => {
     });
 
     // Selector de tutor y voz neuronal
-    const voiceDropdown = document.getElementById("voice-selector-dropdown");
+    const voiceDropdown = document.getElementById("tutor-voice-select") || document.getElementById("voice-selector-dropdown");
     if (voiceDropdown) {
       voiceDropdown.addEventListener("change", (e) => {
         _onVoiceChange(e.target.value);

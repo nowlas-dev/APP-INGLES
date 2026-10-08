@@ -93,23 +93,33 @@ DEFAULT_PITCH = os.environ.get("TTS_PITCH", "+0Hz")  # Resonancia natural
 DEFAULT_VOLUME = os.environ.get("TTS_VOLUME", "+0%")
 
 # ─────────────────────────────────────────────────────────────
-#  Catálogo de Personalidades y Acentos de Tutores Neuronales
+#  Catálogo de Personalidades y Voces Neuronales (VOICES)
 # ─────────────────────────────────────────────────────────────
 
+VOICES: dict[str, dict[str, str]] = {
+    "dalia": {"id": "es-MX-DaliaNeural", "rate": "-2%", "pitch": "+0Hz"},
+    "jorge": {"id": "es-MX-JorgeNeural", "rate": "+0%", "pitch": "-1Hz"},
+    "paloma": {"id": "es-US-PalomaNeural", "rate": "-1%", "pitch": "+1Hz"},
+    "alvaro": {"id": "es-ES-AlvaroNeural", "rate": "-2%", "pitch": "+0Hz"},
+    "elena": {"id": "es-ES-ElviraNeural", "rate": "-4%", "pitch": "+0Hz"},
+}
+
+# Alias para compatibilidad con es-ES-ElenaNeural solicitado
+VOICE_ALIASES: dict[str, str] = {
+    "es-es-elenaneural": "es-ES-ElviraNeural",
+    "es-es-elena": "es-ES-ElviraNeural",
+}
+
 TUTOR_PROFILES: dict[str, dict[str, str]] = {
-    "dalia":  {"voice": "es-MX-DaliaNeural",  "rate": "-3%", "pitch": "+0Hz"},
-    "jorge":  {"voice": "es-MX-JorgeNeural",  "rate": "+0%", "pitch": "-1Hz"},
-    "paloma": {"voice": "es-US-PalomaNeural", "rate": "-2%", "pitch": "+1Hz"},
-    "alvaro": {"voice": "es-ES-AlvaroNeural", "rate": "-2%", "pitch": "+0Hz"},
-    "elena":  {"voice": "es-ES-ElenaNeural",  "rate": "-4%", "pitch": "+0Hz"},
+    k: {"voice": v["id"], "rate": v["rate"], "pitch": v["pitch"]} for k, v in VOICES.items()
 }
 
 
 def get_tutor_profile(voice_id: Optional[str] = None) -> dict[str, str]:
     """Retorna la configuración prosódica del tutor especificado (fallback: dalia)."""
-    if not voice_id:
-        return TUTOR_PROFILES["dalia"]
-    return TUTOR_PROFILES.get(voice_id.strip().lower(), TUTOR_PROFILES["dalia"])
+    key = (voice_id or "dalia").strip().lower()
+    prof = VOICES.get(key, VOICES["dalia"])
+    return {"voice": prof["id"], "rate": prof["rate"], "pitch": prof["pitch"], "id": prof["id"]}
 
 
 # ─────────────────────────────────────────────────────────────
@@ -205,49 +215,34 @@ def preprocess_bilingual_text(text: str) -> str:
 #  API Pública de Síntesis
 # ─────────────────────────────────────────────────────────────
 
-async def synthesize(
-    text: str,
-    target_lang: str = "es-MX",
-    voice: Optional[str] = None,
-    rate: Optional[str] = None,
-    pitch: Optional[str] = None,
-    voice_id: Optional[str] = None,
-) -> bytes:
+async def synthesize_speech(text: str, voice_key: str = "dalia") -> bytes:
     """
-    Sintetiza texto a audio MP3 en memoria con prosodia didáctica y caché LRU.
-    Soporta personalidades de tutor vía voice_id ('dalia', 'jorge', 'paloma', 'alvaro', 'elena').
-
-    Args:
-        text:        Texto a sintetizar (admite mezclas español/inglés).
-        target_lang: Código de idioma ('es-MX', 'es-US', 'en-US'...).
-        voice:       Nombre exacto de la voz (anula target_lang si se provee).
-        rate:        Modulación de velocidad (ej. '-3%', '-5%', '+0%').
-        pitch:       Ajuste de tono (ej. '+0Hz', '-2Hz').
-        voice_id:    Clave del tutor ('dalia', 'jorge', 'paloma', 'alvaro', 'elena').
-
-    Returns:
-        bytes: Buffer binario de audio (MP3 o WAV en fallback).
+    Sintetiza texto directamente en memoria usando edge-tts con voces neuronales humanas de alta fidelidad.
+    Retorna bytes de audio en formato MP3 limpio (sin guardarlo en disco).
     """
     if not text or not text.strip():
         return b""
 
-    # Normalización del texto con soporte de code-switching
+    key = (voice_key or "dalia").lower().strip()
+    if key in VOICES:
+        profile = VOICES[key]
+        voice_id = profile["id"]
+        rate = profile.get("rate", "-2%")
+        pitch = profile.get("pitch", "+0Hz")
+    elif key in VOICE_ALIASES:
+        voice_id = VOICE_ALIASES[key]
+        rate = "-4%"
+        pitch = "+0Hz"
+    else:
+        voice_id = VOICE_ALIASES.get(key, voice_key or "es-MX-DaliaNeural")
+        rate = "-2%"
+        pitch = "+0Hz"
+
+    # Normalización del texto con soporte de code-switching y micropausas
     processed_text = preprocess_bilingual_text(text)
 
-    # Selección según perfil del tutor o parámetros individuales
-    profile = get_tutor_profile(voice_id) if (voice_id or not voice) else None
-
-    if profile and not voice:
-        selected_voice = profile["voice"]
-        selected_rate  = rate or profile["rate"]
-        selected_pitch = pitch or profile["pitch"]
-    else:
-        selected_voice = voice or VOICE_MAP.get(target_lang, DEFAULT_VOICE)
-        selected_rate  = rate or DEFAULT_RATE
-        selected_pitch = pitch or DEFAULT_PITCH
-
     # 1. Comprobar Caché LRU en Memoria (0 ms)
-    cached_bytes = _TTS_CACHE.get(processed_text, selected_voice, selected_rate, selected_pitch)
+    cached_bytes = _TTS_CACHE.get(processed_text, voice_id, rate, pitch)
     if cached_bytes is not None:
         logger.debug(f"[TTS] [CACHE-HIT] ({len(cached_bytes)} bytes) para: '{text[:40]}...'")
         return cached_bytes
@@ -259,30 +254,40 @@ async def synthesize(
         try:
             audio_bytes = await _synthesize_edge_tts(
                 processed_text,
-                selected_voice,
-                selected_rate,
-                selected_pitch,
+                voice_id,
+                rate,
+                pitch,
             )
         except Exception as exc:
-            logger.warning(f"[TTS] edge-tts no disponible ({exc}). Conmutando a fallback offline...")
+            logger.warning(f"[TTS] edge-tts no disponible ({exc}). Conmutando a fallback...")
 
     # 3. Fallback Neuronal Offline: Kokoro / Piper si están configurados
     if audio_bytes is None and (_KOKORO_AVAILABLE or _PIPER_AVAILABLE):
-        audio_bytes = await _synthesize_neural_offline(processed_text, target_lang)
+        audio_bytes = await _synthesize_neural_offline(processed_text, "es-MX")
 
     # 4. Fallback de Emergencia: pyttsx3 configurado a rate=145 y voz HD
     if audio_bytes is None and _PYTTSX3_AVAILABLE:
         audio_bytes = await asyncio.to_thread(_synthesize_pyttsx3, processed_text)
 
     if audio_bytes is None:
-        raise RuntimeError(
-            "Ningún motor TTS está operativo. "
-            "Asegúrate de tener conexión a Internet para edge-tts o instala pyttsx3."
-        )
+        raise RuntimeError("Ningún motor TTS está operativo.")
 
     # Guardar en Cache LRU para consultas futuras
-    _TTS_CACHE.put(processed_text, selected_voice, selected_rate, selected_pitch, audio_bytes)
+    _TTS_CACHE.put(processed_text, voice_id, rate, pitch, audio_bytes)
     return audio_bytes
+
+
+async def synthesize(
+    text: str,
+    target_lang: str = "es-MX",
+    voice: Optional[str] = None,
+    rate: Optional[str] = None,
+    pitch: Optional[str] = None,
+    voice_id: Optional[str] = None,
+) -> bytes:
+    """Mapeo retrocompatible hacia synthesize_speech."""
+    key = voice_id or (voice if voice in VOICES else "dalia")
+    return await synthesize_speech(text, voice_key=key)
 
 
 # ─────────────────────────────────────────────────────────────
